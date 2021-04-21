@@ -12,12 +12,12 @@ CC = 654
 test1: 
 #fdgs
 	@   echo compiling iii $(DD) $(CC) $@
-	gcc -o OUTPUT/test test.c ts_calibrate_common.c cJSON.c
+	gcc -o OUTPUT/main main.c ts_calibrate_common.c cJSON.c
 	@ echo "<><><><><><>><><>><><><><><>"
 	@ echo compile ok
 	@ echo "<><><><><><>><><>><><><><><>"
 	@ echo run ./OUTPUT/test
-	./OUTPUT/test
+	./OUTPUT/main
 	
 test2: 
 #fdgs

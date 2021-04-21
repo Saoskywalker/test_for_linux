@@ -350,7 +350,19 @@ int main(int argc, char *argv[])
     /* Now some samplecode for building objects concisely: */
     create_objects();
 
+    FILE *fp = NULL;
+    
+    fp = fopen("eej.txt", "wb+");
+    if(fp!=NULL)
+    {
+        char str[] = "ssgerhbf";
+        printf("%d\r\n",fwrite(str, 1, sizeof(str) , fp));
+        fclose(fp);
+    }
+
+#ifdef __WINDOWS__
     system("pause");
+#endif
 
     return 0;
 }
