@@ -1,11 +1,13 @@
+#ifdef __WINDOWS__
+#include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <malloc.h>
 #include <string.h>
 #include "ts_calibrate.h"
-
-int test(void);
 
 typedef struct
 {
@@ -254,6 +256,49 @@ static void create_objects(void)
     cJSON_Delete(root);
 }
 
+int test(void)
+{
+    ts_calibration cal;
+    int xi = 50, yi = 80, xo = 0, yo = 0;
+
+    /*物理坐标*/
+    cal.x[0] = 100;
+    cal.y[0] = 100;
+    cal.x[1] = 1600 - 100;
+    cal.y[1] = 50;
+    cal.x[2] = 1600 - 100;
+    cal.x[2] = 960 - 100;
+    cal.x[3] = 100;
+    cal.y[3] = 960 - 100;
+    cal.x[4] = 800;
+    cal.y[4] = 400;
+
+    /*逻辑坐标*/
+    cal.xfb[0] = 50;
+    cal.yfb[0] = 50;
+    cal.xfb[1] = 800 - 50;
+    cal.yfb[1] = 50;
+    cal.xfb[2] = 800 - 50;
+    cal.xfb[2] = 480 - 50;
+    cal.xfb[3] = 50;
+    cal.yfb[3] = 480 - 50;
+    cal.xfb[4] = 400;
+    cal.yfb[4] = 240;
+
+    perform_calibration(&cal);
+
+    printf("%d %d %d %d %d %d %d\r\n",
+           cal.a[0], cal.a[1], cal.a[2], cal.a[3],
+           cal.a[4], cal.a[5], cal.a[6]);
+
+    /*检验校准 x=100 y=150*/
+    coords_get(&cal, &xi, &yi, &xo, &yo);
+    printf("x %d\r\n", xo);
+    printf("y %d\r\n", yo);
+
+    return 0;
+}
+
 int main(int argc, char *argv[])
 {
     int j = 123;
@@ -305,50 +350,7 @@ int main(int argc, char *argv[])
     /* Now some samplecode for building objects concisely: */
     create_objects();
 
-    return 0;
-
-    return 0;
-}
-
-int test(void)
-{
-    ts_calibration cal;
-    int xi = 50, yi = 80, xo = 0, yo = 0;
-
-    /*物理坐标*/
-    cal.x[0] = 100;
-    cal.y[0] = 100;
-    cal.x[1] = 1600 - 100;
-    cal.y[1] = 50;
-    cal.x[2] = 1600 - 100;
-    cal.x[2] = 960 - 100;
-    cal.x[3] = 100;
-    cal.y[3] = 960 - 100;
-    cal.x[4] = 800;
-    cal.y[4] = 400;
-
-    /*逻辑坐标*/
-    cal.xfb[0] = 50;
-    cal.yfb[0] = 50;
-    cal.xfb[1] = 800 - 50;
-    cal.yfb[1] = 50;
-    cal.xfb[2] = 800 - 50;
-    cal.xfb[2] = 480 - 50;
-    cal.xfb[3] = 50;
-    cal.yfb[3] = 480 - 50;
-    cal.xfb[4] = 400;
-    cal.yfb[4] = 240;
-
-    perform_calibration(&cal);
-
-    printf("%d %d %d %d %d %d %d\r\n",
-           cal.a[0], cal.a[1], cal.a[2], cal.a[3],
-           cal.a[4], cal.a[5], cal.a[6]);
-
-    /*检验校准 x=100 y=150*/
-    coords_get(&cal, &xi, &yi, &xo, &yo);
-    printf("x %d\r\n", xo);
-    printf("y %d\r\n", yo);
+    system("pause");
 
     return 0;
 }

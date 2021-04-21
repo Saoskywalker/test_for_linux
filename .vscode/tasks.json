@@ -1,0 +1,21 @@
+{
+    "version": "0.1.0",
+    "command": "gcc",
+    "args": ["-g","-std=gnu99",
+        "${fileDirname}/main.c",
+        "${fileDirname}/cJSON.c",
+        "${fileDirname}/ts_calibrate_common.c",
+        "-o","${workspaceRoot}\\APP.exe","-g","-Wall"],
+    "problemMatcher": {
+        "owner": "c",
+        "fileLocation": ["relative", "${workspaceRoot}"],
+        "pattern": {
+            "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+            "file": 1,
+            "line": 2,
+            "column": 3,
+            "severity": 4,
+            "message": 5
+        }
+    }
+}

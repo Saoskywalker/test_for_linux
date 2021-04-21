@@ -1,0 +1,14 @@
+{
+    "debug.allowBreakpointsEverywhere": true,
+    "files.autoGuessEncoding": true,
+    "esls.clang.extraArgs": [
+        "  "
+    ],
+    "files.associations": {
+        "iostream": "cpp",
+        "windows.h": "c",
+        "cstdio": "c",
+        "cstdlib": "c",
+        "typeinfo": "c"
+    }
+}

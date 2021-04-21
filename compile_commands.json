@@ -1,0 +1,7 @@
+[
+    {
+        "directory": "c:\\Users\\RD-User5\\Desktop\\ttt",
+        "command": "clang      -c \"c:\\Users\\RD-User5\\Desktop\\ttt\\test.cpp\"",
+        "file": "c:\\Users\\RD-User5\\Desktop\\ttt\\test.cpp"
+    }
+]
