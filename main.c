@@ -38,7 +38,6 @@ struct record
     const char *country;
 };
 
-
 /* Create a bunch of objects as demonstration. */
 static int print_preallocated(cJSON *root)
 {
@@ -55,7 +54,7 @@ static int print_preallocated(cJSON *root)
     /* create buffer to succeed */
     /* the extra 5 bytes are because of inaccuracies when reserving memory */
     len = strlen(out) + 5;
-    buf = (char*)malloc(len);
+    buf = (char *)malloc(len);
     if (buf == NULL)
     {
         printf("Failed to allocate memory.\n");
@@ -64,7 +63,7 @@ static int print_preallocated(cJSON *root)
 
     /* create buffer to fail */
     len_fail = strlen(out);
-    buf_fail = (char*)malloc(len_fail);
+    buf_fail = (char *)malloc(len_fail);
     if (buf_fail == NULL)
     {
         printf("Failed to allocate memory.\n");
@@ -72,9 +71,11 @@ static int print_preallocated(cJSON *root)
     }
 
     /* Print to buffer */
-    if (!cJSON_PrintPreallocated(root, buf, (int)len, 1)) {
+    if (!cJSON_PrintPreallocated(root, buf, (int)len, 1))
+    {
         printf("cJSON_PrintPreallocated failed!\n");
-        if (strcmp(out, buf) != 0) {
+        if (strcmp(out, buf) != 0)
+        {
             printf("cJSON_PrintPreallocated not the same as cJSON_Print!\n");
             printf("cJSON_Print result:\n%s\n", out);
             printf("cJSON_PrintPreallocated result:\n%s\n", buf);
@@ -89,7 +90,8 @@ static int print_preallocated(cJSON *root)
     printf("%s\n", buf);
 
     /* force it to fail */
-    if (cJSON_PrintPreallocated(root, buf_fail, (int)len_fail, 1)) {
+    if (cJSON_PrintPreallocated(root, buf_fail, (int)len_fail, 1))
+    {
         printf("cJSON_PrintPreallocated failed to show error with insufficient memory!\n");
         printf("cJSON_Print result:\n%s\n", out);
         printf("cJSON_PrintPreallocated result:\n%s\n", buf_fail);
@@ -118,48 +120,41 @@ static void create_objects(void)
 
     /* Our "days of the week" array: */
     const char *strings[7] =
-    {
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday"
-    };
+        {
+            "Sunday",
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"};
     /* Our matrix: */
     int numbers[3][3] =
-    {
-        {0, -1, 0},
-        {1, 0, 0},
-        {0 ,0, 1}
-    };
+        {
+            {0, -1, 0},
+            {1, 0, 0},
+            {0, 0, 1}};
     /* Our "gallery" item: */
-    int ids[4] = { 116, 943, 234, 38793 };
+    int ids[4] = {116, 943, 234, 38793};
     /* Our array of "records": */
     struct record fields[2] =
-    {
         {
-            "zip",
-            37.7668,
-            -1.223959e+2,
-            "",
-            "SAN FRANCISCO",
-            "CA",
-            "94107",
-            "US"
-        },
-        {
-            "zip",
-            37.371991,
-            -1.22026e+2,
-            "",
-            "SUNNYVALE",
-            "CA",
-            "94085",
-            "US"
-        }
-    };
+            {"zip",
+             37.7668,
+             -1.223959e+2,
+             "",
+             "SAN FRANCISCO",
+             "CA",
+             "94107",
+             "US"},
+            {"zip",
+             37.371991,
+             -1.22026e+2,
+             "",
+             "SUNNYVALE",
+             "CA",
+             "94085",
+             "US"}};
     volatile double zero = 0.0;
 
     /* Here we construct some JSON standards, from the JSON site. */
@@ -171,11 +166,12 @@ static void create_objects(void)
     cJSON_AddStringToObject(fmt, "type", "rect");
     cJSON_AddNumberToObject(fmt, "width", 1920);
     cJSON_AddNumberToObject(fmt, "height", 1080);
-    cJSON_AddFalseToObject (fmt, "interlace");
+    cJSON_AddFalseToObject(fmt, "interlace");
     cJSON_AddNumberToObject(fmt, "frame rate", 24);
 
     /* Print to text */
-    if (print_preallocated(root) != 0) {
+    if (print_preallocated(root) != 0)
+    {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
     }
@@ -184,7 +180,8 @@ static void create_objects(void)
     /* Our "days of the week" array: */
     root = cJSON_CreateStringArray(strings, 7);
 
-    if (print_preallocated(root) != 0) {
+    if (print_preallocated(root) != 0)
+    {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
     }
@@ -199,7 +196,8 @@ static void create_objects(void)
 
     /* cJSON_ReplaceItemInArray(root, 1, cJSON_CreateString("Replacement")); */
 
-    if (print_preallocated(root) != 0) {
+    if (print_preallocated(root) != 0)
+    {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
     }
@@ -217,7 +215,8 @@ static void create_objects(void)
     cJSON_AddStringToObject(thm, "Width", "100");
     cJSON_AddItemToObject(img, "IDs", cJSON_CreateIntArray(ids, 4));
 
-    if (print_preallocated(root) != 0) {
+    if (print_preallocated(root) != 0)
+    {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
     }
@@ -240,7 +239,8 @@ static void create_objects(void)
 
     /* cJSON_ReplaceItemInObject(cJSON_GetArrayItem(root, 1), "City", cJSON_CreateIntArray(ids, 4)); */
 
-    if (print_preallocated(root) != 0) {
+    if (print_preallocated(root) != 0)
+    {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
     }
@@ -249,7 +249,8 @@ static void create_objects(void)
     root = cJSON_CreateObject();
     cJSON_AddNumberToObject(root, "number", 1.0 / zero);
 
-    if (print_preallocated(root) != 0) {
+    if (print_preallocated(root) != 0)
+    {
         cJSON_Delete(root);
         exit(EXIT_FAILURE);
     }
@@ -344,20 +345,35 @@ int main(int argc, char *argv[])
     // }
     // test();
 
-     /* print the version */
+    /* print the version */
     printf("Version: %s\n", cJSON_Version());
 
     /* Now some samplecode for building objects concisely: */
-    create_objects();
+    // create_objects();
 
-    FILE *fp = NULL;
-    
-    fp = fopen("eej.txt", "wb+");
-    if(fp!=NULL)
+    FILE *fp = NULL, *fp2 = NULL;
+    char *tempData = NULL;
+
+    tempData = (char *)malloc(1024 * 1024);
+    fp = fopen("./touch.bin", "rb"); //只读存在打开
+    fp2 = fopen("./OUTPUT/touch.bin", "wb+");   //读写生成打开
+    if (fp != NULL && fp2 != NULL)
     {
-        char str[] = "ssgerhbf";
-        printf("%d\r\n",fwrite(str, 1, sizeof(str) , fp));
+        // char str[] = "ssgerhbf";
+        // printf("%d\r\n",fwrite(str, 1, sizeof(str) , fp));
+        printf("%d\r\n", fread(tempData, 1, 1024 * 1024, fp));
+        printf("%d\r\n", fwrite(tempData, 1, 1024 * 1024, fp2));
+
+        free(tempData);
         fclose(fp);
+        fclose(fp2);
+    }
+    else
+    {
+        if (fp == NULL)
+            printf("file1 error\r\n");
+        if (fp2 == NULL)
+            printf("file2 error\r\n");
     }
 
 #ifdef __WINDOWS__
