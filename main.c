@@ -257,7 +257,7 @@ static void create_objects(void)
     cJSON_Delete(root);
 }
 
-int test(void)
+int test_ts_calibrate(void)
 {
     ts_calibration cal;
     int xi = 50, yi = 80, xo = 0, yo = 0;
@@ -300,7 +300,7 @@ int test(void)
     return 0;
 }
 
-int main(int argc, char *argv[])
+int test(int argc, char *argv[])
 {
     int j = 123;
 
@@ -337,14 +337,18 @@ int main(int argc, char *argv[])
     printf("cmd: %s\r\n", op);
     uu = jjiii();
     printf("uu: %s\r\n", uu);
-    // printf("hello world O(∩_∩)O %d\r\n", argc);
-    // printf("%d\r\n", j);
-    // for (char i = 0; i < argc; i++)
-    // {
-    //     printf("%s\r\n", argv[i]);
-    // }
-    // test();
+    printf("hello world O(∩_∩)O %d\r\n", argc);
+    printf("%d\r\n", j);
+    for (char i = 0; i < argc; i++)
+    {
+        printf("%s\r\n", argv[i]);
+    }
 
+    return 0;
+}
+
+int main(int argc, char *argv[])
+{
     /* print the version */
     printf("Version: %s\n", cJSON_Version());
 
@@ -353,16 +357,18 @@ int main(int argc, char *argv[])
 
     FILE *fp = NULL, *fp2 = NULL;
     char *tempData = NULL;
+    int total = 0;
 
     tempData = (char *)malloc(1024 * 1024);
-    fp = fopen("./touch.bin", "rb"); //只读存在打开
-    fp2 = fopen("./OUTPUT/touch.bin", "wb+");   //读写生成打开
+    fp = fopen("./touch.bin", "rb");              //只读存在打开
+    fp2 = fopen("./OUTPUT/touch_out.bin", "wb+"); //读写生成打开
     if (fp != NULL && fp2 != NULL)
     {
         // char str[] = "ssgerhbf";
         // printf("%d\r\n",fwrite(str, 1, sizeof(str) , fp));
-        printf("%d\r\n", fread(tempData, 1, 1024 * 1024, fp));
-        printf("%d\r\n", fwrite(tempData, 1, 1024 * 1024, fp2));
+        total = fread(tempData, 1, 1024 * 1024, fp);
+        printf("%d\r\n", total);
+        printf("%d\r\n", fwrite(tempData, 1, total, fp2));
 
         free(tempData);
         fclose(fp);
