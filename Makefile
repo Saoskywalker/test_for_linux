@@ -1,6 +1,8 @@
 .PHONY:clean
 .PHONY:write
 .PHONY:mktool
+.PHONY:make_release
+.PHONY:make_debug
 .PHONY:dump
 .PHONY:run
 
@@ -9,15 +11,21 @@ DD = fdsf
 CC = 654
 #rwer
 
-test1: 
+make_debug: 
 #fdgs
 	@   echo compiling iii $(DD) $(CC) $@
-	gcc -o OUTPUT/main main.c ts_calibrate_common.c cJSON.c
+	gcc -g -std=gnu99 -Wall -o OUTPUT/main_debug main.c ts_calibrate_common.c cJSON.c
 	@ echo "<><><><><><>><><>><><><><><>"
 	@ echo compile ok
 	@ echo "<><><><><><>><><>><><><><><>"
-	@ echo run ./OUTPUT/test
-	./OUTPUT/main
+
+make_release: 
+#fdgs
+	@   echo compiling iii $(DD) $(CC) $@
+	gcc -std=gnu99 -O3 -Wall -o OUTPUT/main_release main.c ts_calibrate_common.c cJSON.c
+	@ echo "<><><><><><>><><>><><><><><>"
+	@ echo compile ok
+	@ echo "<><><><><><>><><>><><><><><>"
 	
 test2: 
 #fdgs
