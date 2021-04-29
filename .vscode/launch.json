@@ -2,11 +2,11 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "C Launch (GDB)",
+            "name": "C debug (GDB)",
             "type": "cppdbg",
             "request": "launch",
             "targetArchitecture": "x64",
-            "program": "${workspaceRoot}\\APP.exe",
+            "program": "${workspaceRoot}\\OUTPUT\\main_debug.exe",
             "miDebuggerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-win32-seh-rt_v6-rev0\\mingw64\\bin\\gdb.exe",
             "args": [],
             "stopAtEntry": false,
@@ -19,7 +19,7 @@
             "type": "cppdbg",
             "request": "launch",
             "targetArchitecture": "x64",
-            "program": "${workspaceRoot}\\APP.exe",
+            "program": "${workspaceRoot}\\OUTPUT\\main_release.exe",
             "miDebuggerPath": "C:\\Program Files\\mingw-w64\\x86_64-8.1.0-win32-seh-rt_v6-rev0\\mingw64\\bin\\gdb.exe",
             "args": [],
             "stopAtEntry": false,

@@ -347,6 +347,22 @@ int test(int argc, char *argv[])
     return 0;
 }
 
+#include <SDL2/SDL.h>
+void test_sdl(void)
+{
+    if (SDL_Init(SDL_INIT_VIDEO) == -1) //SDL_初始化
+    {
+        printf("Could not initialize SDL!\n");
+    }
+    else
+    {
+        printf("SDL initialized.\n");
+        SDL_Quit(); //退出SDL调用
+    }
+}
+
+int test_sdl_bmp(int argc, char **argv);
+
 int main(int argc, char *argv[])
 {
     /* print the version */
