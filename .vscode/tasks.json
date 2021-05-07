@@ -44,6 +44,30 @@
                     "message": 5
                 }
             }
+        },
+        {
+            "label": "make_simple",
+            "command": "gcc",
+            "args": [
+                "-g","-std=gnu99","-c",
+                "${file}",
+                "-o","${workspaceRoot}\\OUTPUT\\${fileBasename}.o","-Wall"
+            ],
+            "problemMatcher": {
+                "owner": "c",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
         }
     ]
 }
