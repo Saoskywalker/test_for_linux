@@ -8,6 +8,7 @@
 #include <malloc.h>
 #include <string.h>
 #include "ts_calibrate.h"
+#include "MTF_file.h"
 
 typedef struct
 {
@@ -363,6 +364,121 @@ void test_sdl(void)
 
 int test_sdl_bmp(int argc, char **argv);
 
+int DW_TouchFileDecode(char *_fptr, size_t file_size)
+{
+    if() //command version
+    {
+
+    }
+    else //DGUS version
+    {
+
+    }
+
+    return 0; //success
+}
+
+typedef enum 
+{
+    ctrl_key = 0,
+    ctrl_text,
+    ctrl_picture
+}ctrl_type;
+
+int DW_KeyCtrlDecode(char *ctrl)
+{
+    return 0; //success
+}
+
+int DW_TextCtrlDecode(char *ctrl)
+{
+        if(*ctrl!=0X5A)
+        return 1; //fail
+
+        return 0; //success
+}
+
+int DW_PicCtrlDecode(char *ctrl)
+{
+        if(*ctrl!=0X5A)
+        return 1; //fail
+
+        return 0; //success
+}
+
+static int DW_DisCtrlDecode(char *ctrl)
+{ //control decode and put to json
+    
+    if(*ctrl!=0X5A)
+        return 1; //fail
+    
+    switch (*ctrl) //check ctrl type
+    {
+    case ctrl_text:
+        /* run */
+        break;
+    
+    default:
+        return 2; //fail
+        break;
+    }
+
+    return 0; //success
+}
+
+int DW_DisFileDecode(char *_fptr, size_t file_size)
+{
+    size_t i = 0, j = 0;
+    const char head_code[] = {0X14, 0X44, 0X47, 0X55, 0X53, 0X5F, 0X32};
+    char *fptr_page = _fptr, fptr_control = _fptr+0X4000;
+
+    //check head
+    for (i = 0; i < sizeof(head_code); i++)
+    {
+        if (*_fptr!=head_code[i])
+            return 1; //fail
+    }
+    fptr_page += 18;
+
+    for (i = 0; i < 256; i+=4) //here page number max 256
+    {
+        if (*fptr_page & 0XF0 == 0X40) //page start symbol
+        {
+            //this page has control number
+            for (j = 0; j < *(fptr_page+2); j++)
+            {
+                // if(fptr_control-_fptr>=file_size)
+                //     return 2; //fail
+                if(*fptr_control==0XFF) //file tail is 0XFF
+                    return 0;
+                if(*fptr_control==0X5A) //control start is 0X5A
+                    DW_DisCtrlDecode(fptr_control);
+                fptr_control+=32; //next controll
+            }
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    return 0; //success
+}
+
+void test_DW_file_decode(char *nameDest, char *nameSrc)
+{
+    int error = 0;
+    unsigned char* _fptr = NULL;
+    size_t file_size = 0;
+
+    error = MTF_load_file(&_fptr, &file_size, nameSrc);
+    if(!error)
+        error = DW_DisFileDecode(_fptr, file_size);
+        // error = DW_TouchFileDecode(_fptr, file_size);
+
+    free(_fptr);
+}
+
 int main(int argc, char *argv[])
 {
     /* print the version */
@@ -382,6 +498,7 @@ int main(int argc, char *argv[])
     {
         // char str[] = "ssgerhbf";
         // printf("%d\r\n",fwrite(str, 1, sizeof(str) , fp));
+
         total = fread(tempData, 1, 1024 * 1024, fp);
         printf("%d\r\n", total);
         printf("%d\r\n", fwrite(tempData, 1, total, fp2));
