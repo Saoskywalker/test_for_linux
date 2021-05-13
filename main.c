@@ -348,7 +348,7 @@ int test(int argc, char *argv[])
     return 0;
 }
 
-#include <SDL2/SDL.h>
+/* #include <SDL2/SDL.h>
 void test_sdl(void)
 {
     if (SDL_Init(SDL_INIT_VIDEO) == -1) //SDL_初始化
@@ -360,9 +360,145 @@ void test_sdl(void)
         printf("SDL initialized.\n");
         SDL_Quit(); //退出SDL调用
     }
-}
+} */
 
 int test_sdl_bmp(int argc, char **argv);
+
+typedef enum 
+{
+    ctrl_key = 0,
+    ctrl_text,
+    ctrl_picture
+}ctrl_type;
+
+static u8 key_code[3], coord_code[5];
+void touch_switch_check(int *Xin, int *Yin, u8 state)
+{
+    static u8 s = 0;
+    static u16 dest = 0;
+    u16 x1, y1, x2, y2;
+    char pic_path[PATH_LEN];
+    int com_len = 3;
+
+    RectInfo pic;
+    pic.pixelByte = 4;
+    pic.crossWay = 0;
+    pic.alpha = 255;
+
+    if (state) //按下
+    {
+        if (s == 1)
+        {
+            if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
+            { //按下连续发送
+                key_code[0] = KEY_DOWN;
+                key_code[1] = touch_switch_data[dest + 14];
+                key_code[2] = touch_switch_data[dest + 15];
+                ComModel.send(&key_code[0], &com_len);
+            }
+            return;
+        }
+        for (dest = 0; dest < 8 * 1024 && touch_switch_data[dest] != 0XFF && touch_switch_data[dest + 1] != 0XFF; dest += 16)
+        {
+            if (touch_switch_data[dest + 1] == page_num)
+            {
+                x1 = ((u16)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
+                y1 = ((u16)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
+                x2 = ((u16)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
+                y2 = ((u16)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
+                if (*Xin >= x1 && *Xin <= x2 &&
+                    *Yin >= y1 && *Yin <= y2)
+                {
+                    if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
+                    { //有按下效果
+                        pic_type_adapt(dirPath, &touch_switch_data[dest + 13], NULL, pic_path);
+                        if (UI_pic_cut(pic_path, &pic, x1, y1, x2, y2) == 0)
+                        {
+                            UI_disRegionCrossAdapt(&pic, x1, y1);
+                            LCD_Exec();
+                            free(pic.pixelDatas);
+                        }
+                    }
+                    if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
+                    {
+                        ///////兼容DGUSII按键返回///////
+                        if (touch_switch_data[dest + 14] == 0XFE) //上传
+                        {
+                            if (touch_switch_data[dest + 16] == 0XFE)
+                            {
+                                // controlerTable[controlerCnt] = (touch_switch_data[dest + 17]<<8)+ \
+                                //                                 touch_switch_data[dest + 18];
+                                // controlerCnt++;
+                            }
+                        }
+                        else if (touch_switch_data[dest + 14] == 0XFD) //不上传
+                        {
+                            if (touch_switch_data[dest + 16] == 0XFE)
+                            {
+                                // controlerTable = 
+                            }
+                        }
+                        //////////////////////////////////
+                        else
+                        {
+                            key_code[0] = KEY_DOWN;
+                            key_code[1] = touch_switch_data[dest + 14];
+                            key_code[2] = touch_switch_data[dest + 15];
+                            ComModel.send(&key_code[0], &com_len);
+                        }
+                    }
+                    s = 1;
+                    break;
+                }
+            }
+        }
+    }
+    else //松开
+    {
+        if (s == 1) //之前已按下按钮
+        {
+            s = 0;
+            if (((u16)touch_switch_data[dest + 10] << 8) + touch_switch_data[dest + 11] != 0XFF00)
+            { //跳转页面
+                if (pic_type_adapt(dirPath, &touch_switch_data[dest + 11], NULL, pic_path) == T_GIF)
+                {
+                    gif_decode((u8 *)pic_path, 0, 0, &pic);
+                    UI_LCDBackupRenew();
+                    page_num = touch_switch_data[dest + 11];
+                }
+                else if (UI_pic(pic_path, &pic) == 0)
+                {
+                    UI_disRegionCrossAdapt(&pic, 0, 0);
+                    free(pic.pixelDatas);
+                    LCD_Exec();
+                    UI_LCDBackupRenew();
+                    page_num = touch_switch_data[dest + 11];
+                }
+            }
+            else if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
+            { //恢复按钮
+                pic_type_adapt(dirPath, &page_num, NULL, pic_path);
+                x1 = ((u16)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
+                y1 = ((u16)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
+                x2 = ((u16)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
+                y2 = ((u16)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
+                if (UI_pic_cut(pic_path, &pic, x1, y1, x2, y2) == 0)
+                {
+                    UI_disRegionCrossAdapt(&pic, x1, y1);
+                    LCD_Exec();
+                    free(pic.pixelDatas);
+                }
+            }
+            if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
+            {
+                key_code[0] = KEY_UP;
+                key_code[1] = touch_switch_data[dest + 14];
+                key_code[2] = touch_switch_data[dest + 15];
+                ComModel.send(&key_code[0], &com_len);
+            }
+        }
+    }
+}
 
 int DW_TouchFileDecode(char *_fptr, size_t file_size)
 {
@@ -377,13 +513,6 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
 
     return 0; //success
 }
-
-typedef enum 
-{
-    ctrl_key = 0,
-    ctrl_text,
-    ctrl_picture
-}ctrl_type;
 
 int DW_KeyCtrlDecode(char *ctrl)
 {
