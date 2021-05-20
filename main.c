@@ -364,6 +364,8 @@ void test_sdl(void)
 
 int test_sdl_bmp(int argc, char **argv);
 
+#if 1
+
 typedef enum 
 {
     ctrl_key = 0,
@@ -371,12 +373,19 @@ typedef enum
     ctrl_picture
 }ctrl_type;
 
+#define DW_MAX_PAGE 256
+
+int hmiPage = 0;
+cJSON *HMIConfig = NULL, *display_number[DW_MAX_PAGE] = NULL, *HMI_key[DW_MAX_PAGE] = NULL,
+        *HMI_key_branch[DW_MAX_PAGE] = NUL;
+
+static unsigned char touch_switch_data[8*1024] = {0}; //HMIConfig.bin文件缓存
 static u8 key_code[3], coord_code[5];
 void touch_switch_check(int *Xin, int *Yin, u8 state)
 {
     static u8 s = 0;
     static u16 dest = 0;
-    u16 x1, y1, x2, y2;
+    int x1, y1, x2, y2;
     char pic_path[PATH_LEN];
     int com_len = 3;
 
@@ -385,27 +394,38 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
     pic.crossWay = 0;
     pic.alpha = 255;
 
+    HMIConfig = cJSON_CreateObject();
+    cJSON_AddStringToObject(HMIConfig, "version", "MTF_HMI"); //HMI版本号
+    cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行代码
+
+
+    
+    cJSON_AddNumberToObject(display_number[hmiPage], "width", 1920);
+    cJSON_AddNumberToObject(display_number[hmiPage], "height", 1080);
+    cJSON_AddFalseToObject(display_number[hmiPage], "interlace");
+    cJSON_AddNumberToObject(display_number[hmiPage], "frame rate", 24);
+
     if (state) //按下
     {
-        if (s == 1)
-        {
-            if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
-            { //按下连续发送
-                key_code[0] = KEY_DOWN;
-                key_code[1] = touch_switch_data[dest + 14];
-                key_code[2] = touch_switch_data[dest + 15];
-                ComModel.send(&key_code[0], &com_len);
-            }
-            return;
-        }
+
         for (dest = 0; dest < 8 * 1024 && touch_switch_data[dest] != 0XFF && touch_switch_data[dest + 1] != 0XFF; dest += 16)
         {
-            if (touch_switch_data[dest + 1] == page_num)
+                char sss[32] = {0};
+    sprintf(sss, "display-number@%d", touch_switch_data[dest + 1]);
+    cJSON_AddItemToObject(HMIConfig, sss, display_number[hmiPage] = cJSON_CreateObject());
+    cJSON_AddItemToObject(display_number[hmiPage], "key", HMI_key[hmiPage] = cJSON_CreateArray());
+    cJSON_AddItemToArray(HMI_key[hmiPage], HMI_key_branch[key_branch] = cJSON_CreateObject());
+   
+    cJSON_AddStringToObject(HMI_key_branch[key_branch], "name", "");
+    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "x1", x1); 
+    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "y1", y1); 
+    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "x2", x2); 
+    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "y2", y2);       
             {
-                x1 = ((u16)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
-                y1 = ((u16)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
-                x2 = ((u16)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
-                y2 = ((u16)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
+                x1 = ((int)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
+                y1 = ((int)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
+                x2 = ((int)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
+                y2 = ((int)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
                 if (*Xin >= x1 && *Xin <= x2 &&
                     *Yin >= y1 && *Yin <= y2)
                 {
@@ -422,24 +442,24 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                     if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
                     {
                         ///////兼容DGUSII按键返回///////
-                        if (touch_switch_data[dest + 14] == 0XFE) //上传
-                        {
-                            if (touch_switch_data[dest + 16] == 0XFE)
-                            {
-                                // controlerTable[controlerCnt] = (touch_switch_data[dest + 17]<<8)+ \
-                                //                                 touch_switch_data[dest + 18];
-                                // controlerCnt++;
-                            }
-                        }
-                        else if (touch_switch_data[dest + 14] == 0XFD) //不上传
-                        {
-                            if (touch_switch_data[dest + 16] == 0XFE)
-                            {
-                                // controlerTable = 
-                            }
-                        }
-                        //////////////////////////////////
-                        else
+                        // if (touch_switch_data[dest + 14] == 0XFE) //上传
+                        // {
+                        //     if (touch_switch_data[dest + 16] == 0XFE)
+                        //     {
+                        //         // controlerTable[controlerCnt] = (touch_switch_data[dest + 17]<<8)+ \
+                        //         //                                 touch_switch_data[dest + 18];
+                        //         // controlerCnt++;
+                        //     }
+                        // }
+                        // else if (touch_switch_data[dest + 14] == 0XFD) //不上传
+                        // {
+                        //     if (touch_switch_data[dest + 16] == 0XFE)
+                        //     {
+                        //         // controlerTable = 
+                        //     }
+                        // }
+                        // //////////////////////////////////
+                        // else
                         {
                             key_code[0] = KEY_DOWN;
                             key_code[1] = touch_switch_data[dest + 14];
@@ -608,13 +628,15 @@ void test_DW_file_decode(char *nameDest, char *nameSrc)
     free(_fptr);
 }
 
+#endif
+
 int main(int argc, char *argv[])
 {
     /* print the version */
     printf("Version: %s\n", cJSON_Version());
 
     /* Now some samplecode for building objects concisely: */
-    // create_objects();
+    create_objects();
 
     FILE *fp = NULL, *fp2 = NULL;
     char *tempData = NULL;
