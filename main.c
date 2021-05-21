@@ -376,8 +376,8 @@ typedef enum
 #define DW_MAX_PAGE 256
 
 int hmiPage = 0;
-cJSON *HMIConfig = NULL, *display_number[DW_MAX_PAGE] = NULL, *HMI_key[DW_MAX_PAGE] = NULL,
-        *HMI_key_branch[DW_MAX_PAGE] = NUL;
+cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
+        *HmiCfg_key_branch= NULL;
 
 static unsigned char touch_switch_data[8*1024] = {0}; //HMIConfig.bin文件缓存
 static u8 key_code[3], coord_code[5];
@@ -398,36 +398,31 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
     cJSON_AddStringToObject(HMIConfig, "version", "MTF_HMI"); //HMI版本号
     cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行代码
 
-
-    
-    cJSON_AddNumberToObject(display_number[hmiPage], "width", 1920);
-    cJSON_AddNumberToObject(display_number[hmiPage], "height", 1080);
-    cJSON_AddFalseToObject(display_number[hmiPage], "interlace");
-    cJSON_AddNumberToObject(display_number[hmiPage], "frame rate", 24);
-
     if (state) //按下
     {
 
         for (dest = 0; dest < 8 * 1024 && touch_switch_data[dest] != 0XFF && touch_switch_data[dest + 1] != 0XFF; dest += 16)
         {
-                char sss[32] = {0};
-    sprintf(sss, "display-number@%d", touch_switch_data[dest + 1]);
-    cJSON_AddItemToObject(HMIConfig, sss, display_number[hmiPage] = cJSON_CreateObject());
-    cJSON_AddItemToObject(display_number[hmiPage], "key", HMI_key[hmiPage] = cJSON_CreateArray());
-    cJSON_AddItemToArray(HMI_key[hmiPage], HMI_key_branch[key_branch] = cJSON_CreateObject());
-   
-    cJSON_AddStringToObject(HMI_key_branch[key_branch], "name", "");
-    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "x1", x1); 
-    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "y1", y1); 
-    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "x2", x2); 
-    cJSON_AddNumberToObject(HMI_key_branch[key_branch], "y2", y2);       
+            char sss[32] = {0};
+            sprintf(sss, "display-number@%d", touch_switch_data[dest + 1]);
+            HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss);
+            HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key");
+
+            cJSON_AddItemToArray(HmiCfg_key, HmiCfg_key_branch = cJSON_CreateObject());
+            cJSON_AddStringToObject(HmiCfg_key_branch, "name", ""); 
+            cJSON_AddStringToObject(HmiCfg_key_branch, "type", "click");   
+            cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", cJSON_False);   
             {
+                //按键范围
                 x1 = ((int)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
                 y1 = ((int)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
                 x2 = ((int)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
                 y2 = ((int)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
-                if (*Xin >= x1 && *Xin <= x2 &&
-                    *Yin >= y1 && *Yin <= y2)
+                cJSON_AddNumberToObject(HmiCfg_key_branch, "x1", x1); 
+                cJSON_AddNumberToObject(HmiCfg_key_branch, "y1", y1); 
+                cJSON_AddNumberToObject(HmiCfg_key_branch, "x2", x2); 
+                cJSON_AddNumberToObject(HmiCfg_key_branch, "y2", y2);  
+
                 {
                     if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
                     { //有按下效果

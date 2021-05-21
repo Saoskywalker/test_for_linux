@@ -1,0 +1,314 @@
+{
+    /*
+    变量命名规则: 小写, 单词间用'-'连接, 重复命名用@X区分, 如: display-number@15
+    JSON版本规则与程序兼容, 设计为大类不兼容程序, 同类大更新版本不兼容, 只有小更新版本上下兼容程序,
+    所以JSON版本命名有3个段
+    */
+    "version": "MTF_HMI",
+    "run": "code-group@1", //进入系统自动运行
+    "display-number@15": { //15为页号
+        "run": "code-group@2", //跳转到页时自动运行
+        "key": [
+            {
+                "name": "sound", //控件名, 暂时没用到
+                "x1": 56, //坐标范围
+                "y1": 184,
+                "x2": 261,
+                "y2": 246,
+                "jump": null, //跳转至X页, 保留, 现阶段跳转用触发事件的运行代码
+                "key-effect": null, //按键效果, 保留, 现阶段用触发事件的运行代码
+                "key-code": 5, //键值
+                "address": 4224, //控件编号, 双字节
+                "type": "click", //按键类型, 锁存"lock"或点击"click"
+                "run-down": "code-group@3", //按下时运行代码
+                "auto-send": true, //按下自动上传
+                "storage-bool": false //按键默认值
+            },
+            {
+                "name": "rf",
+                "x1": 55,
+                "y1": 262,
+                "x2": 260,
+                "y2": 327,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 6,
+                "address": 4224,
+                "type": "click",
+                "run-down": "code-group@4",
+                "auto-send": true,
+                "storage-bool": true
+            },
+            {
+                "name": "down",
+                "x1": 535,
+                "y1": 222,
+                "x2": 579,
+                "y2": 264,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 13,
+                "address": 4224,
+                "type": "click",
+                "run-up": "code-group@6",
+                "run-down": "code-group@5",
+                "auto-send": true,
+                "storage-bool": false
+            },
+            {
+                "name": "up",
+                "x1": 679,
+                "y1": 223,
+                "x2": 723,
+                "y2": 265,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 14,
+                "address": 4224,
+                "type": "click",
+                "run-up": "code-group@8",
+                "run-down": "code-group@7",
+                "auto-send": true,
+                "storage-bool": true
+            },
+            {
+                "name": "start",
+                "x1": 683,
+                "y1": 521,
+                "x2": 750,
+                "y2": 583,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 22,
+                "address": 4224,
+                "type": "click",
+                "auto-send": true,
+                "storage-bool": true
+            },
+            {
+                "name": "ere",
+                "x1": 300,
+                "y1": 521,
+                "x2": 500,
+                "y2": 583,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 123,
+                "address": 2323,
+                "type": "lock",
+                "auto-send": false,
+                "storage-bool": false
+            }
+        ],
+        "text": [
+            {
+                "name": "time", //控件名, 暂时没用到
+                "x1": 599, //显示坐标
+                "y1": 231,
+                "font": 37, //字库号
+                "size": 24, //字体大小
+                "color": "fa 00 05", //字体颜色
+                "lenght": 6, //显示的字符串长度, 暂时用不到
+                "address": 6912, //控件编号, 双字节
+                "storage-string": "" //显示的字符串缓存, 暂时用不到
+            },
+            {
+                "name": "int",
+                "x1": 599,
+                "y1": 322,
+                "font": 37,
+                "size": 24,
+                "color": "0C 10 90",
+                "lenght": 6,
+                "address": 6920,
+                "storage-string": "FDSFE"
+            },
+            {
+                "name": "mode",
+                "x1": 599,
+                "y1": 412,
+                "font": 37,
+                "size": 24,
+                "color": "06 c8 10",
+                "lenght": 6,
+                "address": 6916,
+                "storage-string": "FDSFE"
+            }
+        ],
+        "picture": [
+            {
+                "name": "start", //控件名, 暂时没用到
+                "x1": 683, //显示坐标
+                "y1": 521,
+                "address": 4097, //控件编号, 双字节
+                "photo": 16 //图片号
+            }
+        ]
+    },
+    "display-number@16": {
+        "run": "code-group@2",
+        "key": [
+            {
+                "name": "sound",
+                "x1": 56,
+                "y1": 184,
+                "x2": 261,
+                "y2": 246,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 5,
+                "address": 4224,
+                "type": "click",
+                "run-down": "code-group@3",
+                "auto-send": true,
+                "storage-bool": false
+            },
+            {
+                "name": "rf",
+                "x1": 55,
+                "y1": 262,
+                "x2": 260,
+                "y2": 327,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 6,
+                "address": 4224,
+                "type": "click",
+                "run-down": "code-group@4",
+                "auto-send": true,
+                "storage-bool": true
+            },
+            {
+                "name": "down",
+                "x1": 535,
+                "y1": 222,
+                "x2": 579,
+                "y2": 264,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 13,
+                "address": 4224,
+                "type": "click",
+                "run-up": "code-group@6",
+                "run-down": "code-group@5",
+                "auto-send": true,
+                "storage-bool": false
+            },
+            {
+                "name": "up",
+                "x1": 679,
+                "y1": 223,
+                "x2": 723,
+                "y2": 265,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 14,
+                "address": 4224,
+                "type": "click",
+                "run-up": "code-group@8",
+                "run-down": "code-group@7",
+                "auto-send": true,
+                "storage-bool": true
+            },
+            {
+                "name": "start",
+                "x1": 683,
+                "y1": 521,
+                "x2": 750,
+                "y2": 583,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 22,
+                "address": 4224,
+                "type": "click",
+                "auto-send": true,
+                "storage-bool": true
+            },
+            {
+                "name": "ere",
+                "x1": 300,
+                "y1": 521,
+                "x2": 500,
+                "y2": 583,
+                "jump": null,
+                "key-effect": null,
+                "key-code": 123,
+                "address": 2323,
+                "type": "lock",
+                "auto-send": false,
+                "storage-bool": false
+            }
+        ],
+        "text": [
+            {
+                "name": "time",
+                "x1": 599,
+                "y1": 231,
+                "font": 37,
+                "size": 24,
+                "color": "fa 00 05",
+                "lenght": 6,
+                "address": 6912,
+                "storage-string": ""
+            },
+            {
+                "name": "int",
+                "x1": 599,
+                "y1": 322,
+                "font": 37,
+                "size": 24,
+                "color": "0C 10 90",
+                "lenght": 6,
+                "address": 6920,
+                "storage-string": "FDSFE"
+            },
+            {
+                "name": "mode",
+                "x1": 599,
+                "y1": 412,
+                "font": 37,
+                "size": 24,
+                "color": "06 c8 10",
+                "lenght": 6,
+                "address": 6916,
+                "storage-string": "FDSFE"
+            }
+        ],
+        "picture": [
+            {
+                "name": "start",
+                "x1": 683,
+                "y1": 521,
+                "address": 4097,
+                "photo": 16,
+                "type": "normal"
+            }
+        ]
+    },
+    "code-group@1": [
+        "82 0084 00 00000F"
+    ],
+    "code-group@2": [
+        "82 1b00 3639",
+        "82 1b08 3639",
+        "82 1b04 3639"
+    ],
+    "code-group@3": [
+        "71 0F 0038 00B8 0105 00F6 0038 00B8"
+    ],
+    "code-group@4": [
+        "71 10 0038 0106 0105 0147 0038 0106"
+    ],
+    "code-group@5": [
+        "71 16 0217 00DE 0243 0108 0217 00DE"
+    ],
+    "code-group@6": [
+        "71 0F 0217 00DE 0243 0108 0217 00DE"
+    ],
+    "code-group@7": [
+        "71 16 02A7 00DF 02D3 0109 02A7 00DF"
+    ],
+    "code-group@8": [
+        "71 0F 02A7 00DF 02D3 0109 02A7 00DF"
+    ]
+}
