@@ -10,6 +10,8 @@
         "cstdio": "c",
         "cstdlib": "c",
         "typeinfo": "c",
-        "sdl.h": "c"
+        "sdl.h": "c",
+        "dwdriver.h": "c",
+        "types_plus.h": "c"
     }
 }

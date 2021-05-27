@@ -366,6 +366,8 @@ int test_sdl_bmp(int argc, char **argv);
 
 #if 1
 
+#include "dwDriver.h"
+
 typedef enum 
 {
     ctrl_key = 0,
@@ -375,8 +377,81 @@ typedef enum
 
 #define DW_MAX_PAGE 256
 
-int hmiPage = 0;
-cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
+static char *string_temp = NULL;
+static int hmiCmdCnt = 0, hmiCmdCntLast = 0;
+
+char HMI_JSON_create_init(void)
+{
+    hmiCmdCnt = 0;
+    hmiCmdCntLast = hmiCmdCnt;
+    string_temp = malloc(256*3); //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
+    if(string_temp==NULL)
+        return 1; //失败
+    else
+        return 0; //成功
+}
+
+char HMI_JSON_remove_init(void)
+{
+    free(string_temp);
+    return 0; //成功 
+}
+
+/*********用于把运行命令生成JSON字符对象**************/
+static char *HMI_JSON_btos(char *b, int count)
+{
+    int j = 0, i = 0;
+    char t = 0;
+
+    if (b == NULL || count == 0)
+        return NULL;
+
+    for (i = 0, j = 0; j < count; i += 3, j++)
+    {
+        t = (b[j] & 0XF0) >> 4;
+        if (t > '9')
+            string_temp[i] = t + '7'; //A~F
+        else
+            string_temp[i] = t + '0'; //0~9
+
+        t = b[j] & 0X0F;
+
+        if (t > '9')
+            string_temp[i + 1] = t + '7'; //A~F
+        else
+            string_temp[i + 1] = t + '0'; //0~9
+
+        string_temp[i + 2] = ' ';
+    }
+    string_temp[i - 1] = 0; //字符串结尾
+
+    return string_temp;
+} 
+
+static cJSON *HmiRunCodeNum(int i)
+{
+    //检查并生成运行代码数组
+}
+
+static int HmiRunCodeGenerate(int cmdNum)
+{
+    char *data = NULL, *ss = NULL;
+    int cnt = 0;
+
+	cnt = dwGetSendData((char **)&data); //生成命令数组
+    ss = HMI_JSON_btos(data, cnt); //命令数组转换为字符串
+    if(ss==NULL)
+    {
+        return 0; //失败
+    }
+    else
+    {
+        return cJSON_AddItemToArray(HmiRunCodeNum(cmdNum), cJSON_CreateString(ss)); //放入JSON
+    }
+}
+
+static int hmiPage = 0;
+static cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
         *HmiCfg_key_branch= NULL;
 
 static unsigned char touch_switch_data[8*1024] = {0}; //HMIConfig.bin文件缓存
@@ -426,6 +501,8 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                 {
                     if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
                     { //有按下效果
+                        dwCutPic(touch_switch_data[dest + 13], x1, y1, x2, y2, x1, y1);
+                        HmiRunCodeGenerate(hmiCmdCnt);
                         pic_type_adapt(dirPath, &touch_switch_data[dest + 13], NULL, pic_path);
                         if (UI_pic_cut(pic_path, &pic, x1, y1, x2, y2) == 0)
                         {
