@@ -378,12 +378,14 @@ typedef enum
 #define DW_MAX_PAGE 256
 
 static char *string_temp = NULL;
-static int hmiCmdCnt = 0, hmiCmdCntLast = 0;
+static int hmiCmdCnt = 0;
+static int hmiPage = 0;
+static cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
+        *HmiCfg_key_branch= NULL;
 
 char HMI_JSON_create_init(void)
 {
     hmiCmdCnt = 0;
-    hmiCmdCntLast = hmiCmdCnt;
     string_temp = malloc(256*3); //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
     if(string_temp==NULL)
         return 1; //失败
@@ -428,9 +430,21 @@ static char *HMI_JSON_btos(char *b, int count)
     return string_temp;
 } 
 
+static int HmiRunCodeNumCreate(void)
+{
+    //生成新运行代码号
+    return hmiCmdCnt++;
+}
+
 static cJSON *HmiRunCodeNum(int i)
 {
-    //检查并生成运行代码数组
+    //生成运行代码数组
+    char sss[16] = {0};
+    cJSON *runCodeGroup = NULL;
+    sprintf(sss, "code-group@%d", i);
+    runCodeGroup = cJSON_CreateArray();
+    cJSON_AddItemToObject(HMIConfig, sss, runCodeGroup);
+    return runCodeGroup;
 }
 
 static int HmiRunCodeGenerate(int cmdNum)
@@ -450,10 +464,6 @@ static int HmiRunCodeGenerate(int cmdNum)
     }
 }
 
-static int hmiPage = 0;
-static cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
-        *HmiCfg_key_branch= NULL;
-
 static unsigned char touch_switch_data[8*1024] = {0}; //HMIConfig.bin文件缓存
 static u8 key_code[3], coord_code[5];
 void touch_switch_check(int *Xin, int *Yin, u8 state)
@@ -463,6 +473,8 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
     int x1, y1, x2, y2;
     char pic_path[PATH_LEN];
     int com_len = 3;
+    int runNum = 0;
+    char sss[32] = {0};
 
     RectInfo pic;
     pic.pixelByte = 4;
@@ -478,7 +490,7 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
 
         for (dest = 0; dest < 8 * 1024 && touch_switch_data[dest] != 0XFF && touch_switch_data[dest + 1] != 0XFF; dest += 16)
         {
-            char sss[32] = {0};
+            
             sprintf(sss, "display-number@%d", touch_switch_data[dest + 1]);
             HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss);
             HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key");
@@ -502,14 +514,7 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                     if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
                     { //有按下效果
                         dwCutPic(touch_switch_data[dest + 13], x1, y1, x2, y2, x1, y1);
-                        HmiRunCodeGenerate(hmiCmdCnt);
-                        pic_type_adapt(dirPath, &touch_switch_data[dest + 13], NULL, pic_path);
-                        if (UI_pic_cut(pic_path, &pic, x1, y1, x2, y2) == 0)
-                        {
-                            UI_disRegionCrossAdapt(&pic, x1, y1);
-                            LCD_Exec();
-                            free(pic.pixelDatas);
-                        }
+                        HmiRunCodeGenerate(HmiRunCodeNumCreate());
                     }
                     if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
                     {
@@ -533,10 +538,9 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                         // //////////////////////////////////
                         // else
                         {
-                            key_code[0] = KEY_DOWN;
-                            key_code[1] = touch_switch_data[dest + 14];
-                            key_code[2] = touch_switch_data[dest + 15];
-                            ComModel.send(&key_code[0], &com_len);
+                            cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", ((int)touch_switch_data[dest + 14]<<8)|
+                                                    (touch_switch_data[dest + 15])); 
+                            cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", cJSON_True);
                         }
                     }
                     s = 1;
