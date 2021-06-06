@@ -46,7 +46,7 @@ char dwRemove(void)
 
 int dwGetSendData(u8 **i)
 {
-	i = &_data[0];
+	i = (u8 **)&_data[0];
 	return _data_cnt;
 }
 
@@ -65,12 +65,15 @@ static inline void dwSendOver(void)
 /***发送帧用户数据***/
 static inline void dwSendBuf(u8 byte)
 {
-	for(; _data_cnt<=BUF_MAX; _data_cnt++)
+	if (_data_cnt < BUF_MAX)
+	{
 		_data[_data_cnt] = byte;
+		_data_cnt++;
+	}
 }
 
 /*******************about key********************/
-static u8 keyFlag = 0;
+// static u8 keyFlag = 0;
 void dwCancelKey(void){
 	keyNum = 0;
 }
@@ -86,7 +89,7 @@ void dwListenCoord(void(*press)(void), void(*free)(void), const Button* btn){
 }
 
 /**将坐标数据转换成int 型**/
-static void dwConvertLocation(void){
+/* static void dwConvertLocation(void){
 	locaX = 0;
 	locaX = frameData[1];
 	locaX <<= 8;
@@ -145,19 +148,19 @@ void dwHandlerCoord(void){
 			}
 		}
 	}
-}
+} */
 
 //***************触控模式***********************
-void dwListenButton(void(*press)(void), void(*free)(void), u16 Command){
+/* void dwListenButton(void(*press)(void), void(*free)(void), u16 Command){
 	if(keyNum < 30){
 		dwKeyListen[keyNum].pressHandle = press;
 		dwKeyListen[keyNum].freeHandle = free;
 		dwKeyListen[keyNum].command = Command;
 		keyNum++;
 	}
-}
+} */
 
-void dwHandlerButton(void){
+/* void dwHandlerButton(void){
 	static u8 i;
 	u16 cmd = 0;
 
@@ -198,7 +201,7 @@ void dwHandlerButton(void){
 			}
 		}
 	}
-}
+} */
 
 // 设置调色板
 void dwSetColor(u16 f,u16 b){
@@ -384,14 +387,14 @@ void dwSound(u8 duration){  // duration*10ms
 }
 
  /*****等待松手*****/
-void dwWaitRelease(void){
+/* void dwWaitRelease(void){
 	while(frameData[0] != 0x72 && frameData[0] != 0x78);
-}
+} */
 
  /*****等待按下*****/
-void dwWaitPress(void){
+/* void dwWaitPress(void){
 	while(frameData[0] != 0x73 && frameData[0] != 0x79);
-}
+} */
 
 /***查询按键状态****/
 // DW_CMD_PRESSED= 0x73  按下
@@ -399,21 +402,21 @@ void dwWaitPress(void){
 // DW_CMD_DONE   = 0xE4  触控校正完成
 
 /****查询接收的命令***/
-u8 dwQueryCmd(void)
-{
-	if(frameFlag) //是否有数据帧
-	{
-		frameFlag = 0;
-		return frameData[0];
-	}
-	else
-	{
-		return 0XFF;
-	}
-}
+// u8 dwQueryCmd(void)
+// {
+// 	if(frameFlag) //是否有数据帧
+// 	{
+// 		frameFlag = 0;
+// 		return frameData[0];
+// 	}
+// 	else
+// 	{
+// 		return 0XFF;
+// 	}
+// }
 
 /****触屏校准***/
-void dwCalibration(void){ 
+/* void dwCalibration(void){ 
 	dwSendStart();
 	dwSendBuf(0xE4); 
 	dwSendBuf(0x55);
@@ -421,14 +424,14 @@ void dwCalibration(void){
 	dwSendBuf(0xA5);
 	dwSendOver();
 	while(dwQueryCmd() != 0xE4);  // 等待收到校准成功指令
-}
+} */
 
 // 最大音量播放音乐
 // param id:  0--120;
 // param num: 1--120;
-extern u8 muteFlag;
+// extern u8 muteFlag;
 void dwPlayMusic(u8 id, u8 num){
-	if(muteFlag) return; //静音
+	// if(muteFlag) return; //静音
 	dwSendStart();
 	dwSendBuf(0x30);
 	dwSendBuf(id);

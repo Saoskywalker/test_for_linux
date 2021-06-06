@@ -452,7 +452,7 @@ static int HmiRunCodeGenerate(int cmdNum)
     char *data = NULL, *ss = NULL;
     int cnt = 0;
 
-	cnt = dwGetSendData((char **)&data); //生成命令数组
+	cnt = dwGetSendData((unsigned char **)&data); //生成命令数组
     ss = HMI_JSON_btos(data, cnt); //命令数组转换为字符串
     if(ss==NULL)
     {
@@ -463,37 +463,55 @@ static int HmiRunCodeGenerate(int cmdNum)
         return cJSON_AddItemToArray(HmiRunCodeNum(cmdNum), cJSON_CreateString(ss)); //放入JSON
     }
 }
+/***********************************************/
 
-static unsigned char touch_switch_data[8*1024] = {0}; //HMIConfig.bin文件缓存
-static u8 key_code[3], coord_code[5];
-void touch_switch_check(int *Xin, int *Yin, u8 state)
+static int HmiTouchPageCreate(int new_num, int old_num)
 {
-    static u8 s = 0;
-    static u16 dest = 0;
-    int x1, y1, x2, y2;
-    char pic_path[PATH_LEN];
-    int com_len = 3;
-    int runNum = 0;
     char sss[32] = {0};
-
-    RectInfo pic;
-    pic.pixelByte = 4;
-    pic.crossWay = 0;
-    pic.alpha = 255;
-
-    HMIConfig = cJSON_CreateObject();
-    cJSON_AddStringToObject(HMIConfig, "version", "MTF_HMI"); //HMI版本号
-    cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行代码
-
-    if (state) //按下
+    printf("new: %#X, old: %#X\r\n", new_num, old_num);
+    //注意
+    // if (old_num <= new_num)
     {
-
-        for (dest = 0; dest < 8 * 1024 && touch_switch_data[dest] != 0XFF && touch_switch_data[dest + 1] != 0XFF; dest += 16)
+        if (old_num < new_num) //新增页号
         {
-            
-            sprintf(sss, "display-number@%d", touch_switch_data[dest + 1]);
+            sprintf(sss, "display-number@%d", new_num);
             HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss);
             HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key");
+        }
+        else //不用新增
+        {
+        }
+        return 0; //成功
+    }
+
+    return 1; //失败
+}
+
+int DW_TouchFileDecode(char *_fptr, size_t file_size)
+{
+    unsigned char s = 0;
+    size_t dest = 0;
+    int x1, y1, x2, y2;
+    // char pic_path[PATH_LEN];
+    int runNum = 0;
+    int old = 0;
+
+    // RectInfo pic;
+    // pic.pixelByte = 4;
+    // pic.crossWay = 0;
+    // pic.alpha = 255;
+
+    // if (state) //按下
+    {
+        dest = 0;
+        while (_fptr[dest] != 0XFF && _fptr[dest + 1] != 0XFF)
+        {
+            if(dest >= file_size)
+                return 0;
+            //需要判断是否同一页
+            if(HmiTouchPageCreate(_fptr[dest + 1], old))
+                return 2;
+            old = _fptr[dest + 1];
 
             cJSON_AddItemToArray(HmiCfg_key, HmiCfg_key_branch = cJSON_CreateObject());
             cJSON_AddStringToObject(HmiCfg_key_branch, "name", ""); 
@@ -501,36 +519,37 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
             cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", cJSON_False);   
             {
                 //按键范围
-                x1 = ((int)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
-                y1 = ((int)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
-                x2 = ((int)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
-                y2 = ((int)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
+                x1 = ((int)_fptr[dest + 2] << 8) + _fptr[dest + 3];
+                y1 = ((int)_fptr[dest + 4] << 8) + _fptr[dest + 5];
+                x2 = ((int)_fptr[dest + 6] << 8) + _fptr[dest + 7];
+                y2 = ((int)_fptr[dest + 8] << 8) + _fptr[dest + 9];
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x1", x1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "y1", y1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x2", x2); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "y2", y2);  
 
                 {
-                    if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
+                    if (((u16)_fptr[dest + 12] << 8) + _fptr[dest + 13] != 0XFF00)
                     { //有按下效果
-                        dwCutPic(touch_switch_data[dest + 13], x1, y1, x2, y2, x1, y1);
+                        dwCutPic(_fptr[dest + 13], x1, y1, x2, y2, x1, y1);
                         HmiRunCodeGenerate(HmiRunCodeNumCreate());
                     }
-                    if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
+                    if (_fptr[dest + 14] != 0XFF) //判断是否发送键值
                     {
                         ///////兼容DGUSII按键返回///////
-                        // if (touch_switch_data[dest + 14] == 0XFE) //上传
+                        // if (_fptr[dest + 14] == 0XFE) //上传
                         // {
-                        //     if (touch_switch_data[dest + 16] == 0XFE)
+                        //     if (_fptr[dest + 16] == 0XFE)
                         //     {
-                        //         // controlerTable[controlerCnt] = (touch_switch_data[dest + 17]<<8)+ \
-                        //         //                                 touch_switch_data[dest + 18];
+                        //         // controlerTable[controlerCnt] = (_fptr[dest + 17]<<8)+ \
+                        //         //                                 _fptr[dest + 18];
                         //         // controlerCnt++;
                         //     }
+                        //      dest += 32;
                         // }
-                        // else if (touch_switch_data[dest + 14] == 0XFD) //不上传
+                        // else if (_fptr[dest + 14] == 0XFD) //不上传
                         // {
-                        //     if (touch_switch_data[dest + 16] == 0XFE)
+                        //     if (_fptr[dest + 16] == 0XFE)
                         //     {
                         //         // controlerTable = 
                         //     }
@@ -538,29 +557,30 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                         // //////////////////////////////////
                         // else
                         {
-                            cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", ((int)touch_switch_data[dest + 14]<<8)|
-                                                    (touch_switch_data[dest + 15])); 
+                            cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", ((int)_fptr[dest + 14]<<8)|
+                                                    (_fptr[dest + 15])); 
                             cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", cJSON_True);
+                            dest += 16;
                         }
                     }
                     s = 1;
-                    break;
+                    // break;
                 }
             }
         }
     }
-    else //松开
+/*     else //松开
     {
         if (s == 1) //之前已按下按钮
         {
             s = 0;
-            if (((u16)touch_switch_data[dest + 10] << 8) + touch_switch_data[dest + 11] != 0XFF00)
+            if (((u16)_fptr[dest + 10] << 8) + _fptr[dest + 11] != 0XFF00)
             { //跳转页面
-                if (pic_type_adapt(dirPath, &touch_switch_data[dest + 11], NULL, pic_path) == T_GIF)
+                if (pic_type_adapt(dirPath, &_fptr[dest + 11], NULL, pic_path) == T_GIF)
                 {
                     gif_decode((u8 *)pic_path, 0, 0, &pic);
                     UI_LCDBackupRenew();
-                    page_num = touch_switch_data[dest + 11];
+                    page_num = _fptr[dest + 11];
                 }
                 else if (UI_pic(pic_path, &pic) == 0)
                 {
@@ -568,16 +588,16 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                     free(pic.pixelDatas);
                     LCD_Exec();
                     UI_LCDBackupRenew();
-                    page_num = touch_switch_data[dest + 11];
+                    page_num = _fptr[dest + 11];
                 }
             }
-            else if (((u16)touch_switch_data[dest + 12] << 8) + touch_switch_data[dest + 13] != 0XFF00)
+            else if (((u16)_fptr[dest + 12] << 8) + _fptr[dest + 13] != 0XFF00)
             { //恢复按钮
                 pic_type_adapt(dirPath, &page_num, NULL, pic_path);
-                x1 = ((u16)touch_switch_data[dest + 2] << 8) + touch_switch_data[dest + 3];
-                y1 = ((u16)touch_switch_data[dest + 4] << 8) + touch_switch_data[dest + 5];
-                x2 = ((u16)touch_switch_data[dest + 6] << 8) + touch_switch_data[dest + 7];
-                y2 = ((u16)touch_switch_data[dest + 8] << 8) + touch_switch_data[dest + 9];
+                x1 = ((u16)_fptr[dest + 2] << 8) + _fptr[dest + 3];
+                y1 = ((u16)_fptr[dest + 4] << 8) + _fptr[dest + 5];
+                x2 = ((u16)_fptr[dest + 6] << 8) + _fptr[dest + 7];
+                y2 = ((u16)_fptr[dest + 8] << 8) + _fptr[dest + 9];
                 if (UI_pic_cut(pic_path, &pic, x1, y1, x2, y2) == 0)
                 {
                     UI_disRegionCrossAdapt(&pic, x1, y1);
@@ -585,28 +605,16 @@ void touch_switch_check(int *Xin, int *Yin, u8 state)
                     free(pic.pixelDatas);
                 }
             }
-            if (touch_switch_data[dest + 14] != 0XFF) //判断是否发送键值
+            if (_fptr[dest + 14] != 0XFF) //判断是否发送键值
             {
                 key_code[0] = KEY_UP;
-                key_code[1] = touch_switch_data[dest + 14];
-                key_code[2] = touch_switch_data[dest + 15];
+                key_code[1] = _fptr[dest + 14];
+                key_code[2] = _fptr[dest + 15];
                 ComModel.send(&key_code[0], &com_len);
             }
         }
-    }
-}
-
-int DW_TouchFileDecode(char *_fptr, size_t file_size)
-{
-    if() //command version
-    {
-
-    }
-    else //DGUS version
-    {
-
-    }
-
+    } */
+    
     return 0; //success
 }
 
@@ -655,7 +663,7 @@ int DW_DisFileDecode(char *_fptr, size_t file_size)
 {
     size_t i = 0, j = 0;
     const char head_code[] = {0X14, 0X44, 0X47, 0X55, 0X53, 0X5F, 0X32};
-    char *fptr_page = _fptr, fptr_control = _fptr+0X4000;
+    char *fptr_page = _fptr, *fptr_control = _fptr+0X4000;
 
     //check head
     for (i = 0; i < sizeof(head_code); i++)
@@ -690,18 +698,47 @@ int DW_DisFileDecode(char *_fptr, size_t file_size)
     return 0; //success
 }
 
-void test_DW_file_decode(char *nameDest, char *nameSrc)
+void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
 {
     int error = 0;
     unsigned char* _fptr = NULL;
     size_t file_size = 0;
 
-    error = MTF_load_file(&_fptr, &file_size, nameSrc);
-    if(!error)
-        error = DW_DisFileDecode(_fptr, file_size);
-        // error = DW_TouchFileDecode(_fptr, file_size);
+    HMIConfig = cJSON_CreateObject();
+    cJSON_AddStringToObject(HMIConfig, "version", "MTF_HMI"); //HMI版本号
+    cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行代码
 
-    free(_fptr);
+    dwMount();
+
+    error = MTF_load_file(&_fptr, &file_size, nameTouchSrc);
+    if(!error)
+    {
+        error = DW_TouchFileDecode(_fptr, file_size);
+        free(_fptr);
+        // if(!error)
+        // {
+        //     error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
+        //     if(!error)
+        //     {
+        //         error = DW_DisFileDecode(_fptr, file_size);
+        //         free(_fptr);
+        //     }
+        // }
+    }
+
+    if (!error)
+    {
+        /* Print to text */
+        if (print_preallocated(HMIConfig) != 0)
+            printf("output error\r\n");
+        cJSON_Delete(HMIConfig);
+    }
+    else
+    {
+        printf("decode error\r\n");
+    }
+
+    dwRemove();
 }
 
 #endif
@@ -712,7 +749,8 @@ int main(int argc, char *argv[])
     printf("Version: %s\n", cJSON_Version());
 
     /* Now some samplecode for building objects concisely: */
-    create_objects();
+    // create_objects();
+    test_DW_file_decode(NULL, "./13.bin", NULL);
 
     FILE *fp = NULL, *fp2 = NULL;
     char *tempData = NULL;
