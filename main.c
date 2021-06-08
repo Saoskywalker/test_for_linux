@@ -393,7 +393,7 @@ char HMI_JSON_create_init(void)
         return 0; //成功
 }
 
-char HMI_JSON_remove_init(void)
+char HMI_JSON_remove(void)
 {
     free(string_temp);
     return 0; //成功 
@@ -454,6 +454,7 @@ static int HmiRunCodeGenerate(int cmdNum)
 
 	cnt = dwGetSendData((unsigned char **)&data); //生成命令数组
     ss = HMI_JSON_btos(data, cnt); //命令数组转换为字符串
+    printf("ss: %s\r\n", ss);
     if(ss==NULL)
     {
         return 0; //失败
@@ -504,7 +505,7 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
     // if (state) //按下
     {
         dest = 0;
-        while (_fptr[dest] != 0XFF && _fptr[dest + 1] != 0XFF)
+        // while (_fptr[dest] != 0XFF && _fptr[dest + 1] != 0XFF)
         {
             if(dest >= file_size)
                 return 0;
@@ -708,6 +709,7 @@ void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
     cJSON_AddStringToObject(HMIConfig, "version", "MTF_HMI"); //HMI版本号
     cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行代码
 
+    HMI_JSON_create_init();
     dwMount();
 
     error = MTF_load_file(&_fptr, &file_size, nameTouchSrc);
