@@ -46,7 +46,7 @@ char dwRemove(void)
 
 int dwGetSendData(u8 **i)
 {
-	i = (u8 **)&_data[0];
+	*i = _data;
 	return _data_cnt;
 }
 

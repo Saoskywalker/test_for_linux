@@ -411,14 +411,14 @@ static char *HMI_JSON_btos(char *b, int count)
     for (i = 0, j = 0; j < count; i += 3, j++)
     {
         t = (b[j] & 0XF0) >> 4;
-        if (t > '9')
+        if (t > 9)
             string_temp[i] = t + '7'; //A~F
         else
             string_temp[i] = t + '0'; //0~9
 
         t = b[j] & 0X0F;
 
-        if (t > '9')
+        if (t > 9)
             string_temp[i + 1] = t + '7'; //A~F
         else
             string_temp[i + 1] = t + '0'; //0~9
@@ -454,7 +454,6 @@ static int HmiRunCodeGenerate(int cmdNum)
 
 	cnt = dwGetSendData((unsigned char **)&data); //生成命令数组
     ss = HMI_JSON_btos(data, cnt); //命令数组转换为字符串
-    printf("ss: %s\r\n", ss);
     if(ss==NULL)
     {
         return 0; //失败
@@ -492,10 +491,12 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
 {
     unsigned char s = 0;
     size_t dest = 0;
-    int x1, y1, x2, y2;
+    int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     // char pic_path[PATH_LEN];
     int runNum = 0;
     int old = 0;
+
+    char oi = 0, io = 0;
 
     // RectInfo pic;
     // pic.pixelByte = 4;
@@ -520,10 +521,13 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
             cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", cJSON_False);   
             {
                 //按键范围
-                x1 = ((int)_fptr[dest + 2] << 8) + _fptr[dest + 3];
+                x1 = ((int)_fptr[dest + 2] << 8) + (_fptr[dest + 3]&0XFF);
                 y1 = ((int)_fptr[dest + 4] << 8) + _fptr[dest + 5];
                 x2 = ((int)_fptr[dest + 6] << 8) + _fptr[dest + 7];
                 y2 = ((int)_fptr[dest + 8] << 8) + _fptr[dest + 9];
+                io = _fptr[dest + 2];
+                oi = _fptr[dest + 3]&0XFF;
+                printf("x1: %#X, %#X, %#X, %d\r\n", x1, (int)io<<8, oi, sizeof(oi));
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x1", x1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "y1", y1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x2", x2); 
