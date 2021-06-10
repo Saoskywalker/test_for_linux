@@ -13,5 +13,6 @@
         "sdl.h": "c",
         "dwdriver.h": "c",
         "types_plus.h": "c"
-    }
+    },
+    "files.autoSaveDelay": 30000
 }
