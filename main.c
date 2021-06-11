@@ -496,8 +496,6 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
     int runNum = 0;
     int old = 0;
 
-    unsigned char oi = 0, io = 0;
-
     // RectInfo pic;
     // pic.pixelByte = 4;
     // pic.crossWay = 0;
@@ -525,9 +523,7 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
                 y1 = ((int)_fptr[dest + 4] << 8) + _fptr[dest + 5];
                 x2 = ((int)_fptr[dest + 6] << 8) + _fptr[dest + 7];
                 y2 = ((int)_fptr[dest + 8] << 8) + _fptr[dest + 9];
-                io = _fptr[dest + 2];
-                oi = _fptr[dest + 3];
-                printf("x1: %#X, %#X, %#X, %d\r\n", x1, (int)io<<8, oi, sizeof(size_t));
+                printf("x1: %#X, %#X, %#X\r\n", x1, _fptr[dest + 2], _fptr[dest + 3]);
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x1", x1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "y1", y1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x2", x2); 
