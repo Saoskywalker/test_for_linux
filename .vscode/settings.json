@@ -12,7 +12,8 @@
         "typeinfo": "c",
         "sdl.h": "c",
         "dwdriver.h": "c",
-        "types_plus.h": "c"
+        "types_plus.h": "c",
+        "mtf_file.h": "c"
     },
     "files.autoSaveDelay": 30000
 }

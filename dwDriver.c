@@ -24,7 +24,7 @@ union CharInt{
 
 #include <malloc.h>
 
-static int _data_cnt = 0;
+static unsigned int _data_cnt = 0;
 static u8 *_data = NULL;
 #define BUF_MAX 256
 
@@ -44,7 +44,7 @@ char dwRemove(void)
 	return 0;
 }
 
-int dwGetSendData(u8 **i)
+unsigned int dwGetSendData(u8 **i)
 {
 	*i = _data;
 	return _data_cnt;

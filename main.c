@@ -377,33 +377,34 @@ typedef enum
 
 #define DW_MAX_PAGE 256
 
-static char *string_temp = NULL;
-static int hmiCmdCnt = 0;
-static int hmiPage = 0;
+static uint8_t *string_temp = NULL;
+static size_t hmiCmdCnt = 0;
+static size_t hmiPage = 0;
 static cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
         *HmiCfg_key_branch= NULL;
 
-char HMI_JSON_create_init(void)
+int HMI_JSON_create_init(void)
 {
     hmiCmdCnt = 0;
-    string_temp = malloc(256*3); //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
+    string_temp = (uint8_t *)malloc(256*3); //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
+
     if(string_temp==NULL)
         return 1; //失败
     else
         return 0; //成功
 }
 
-char HMI_JSON_remove(void)
+int HMI_JSON_remove(void)
 {
     free(string_temp);
     return 0; //成功 
 }
 
 /*********用于把运行命令生成JSON字符对象**************/
-static char *HMI_JSON_btos(char *b, int count)
+static uint8_t *HmiJsonBtos(uint8_t *b, size_t count)
 {
-    int j = 0, i = 0;
-    char t = 0;
+    size_t j = 0, i = 0;
+    uint8_t t = 0;
 
     if (b == NULL || count == 0)
         return NULL;
@@ -430,13 +431,13 @@ static char *HMI_JSON_btos(char *b, int count)
     return string_temp;
 } 
 
-static int HmiRunCodeNumCreate(void)
+static size_t HmiRunCodeNumCreate(void)
 {
     //生成新运行代码号
     return hmiCmdCnt++;
 }
 
-static cJSON *HmiRunCodeNum(int i)
+static cJSON *HmiRunCodeNum(size_t i)
 {
     //生成运行代码数组
     char sss[16] = {0};
@@ -447,25 +448,25 @@ static cJSON *HmiRunCodeNum(int i)
     return runCodeGroup;
 }
 
-static int HmiRunCodeGenerate(int cmdNum)
+static int HmiRunCodeGenerate(size_t cmdNum)
 {
-    char *data = NULL, *ss = NULL;
-    int cnt = 0;
+    uint8_t *data = NULL, *ss = NULL;
+    size_t cnt = 0;
 
-	cnt = dwGetSendData((unsigned char **)&data); //生成命令数组
-    ss = HMI_JSON_btos(data, cnt); //命令数组转换为字符串
+	cnt = dwGetSendData(&data); //生成命令数组
+    ss = HmiJsonBtos(data, cnt); //命令数组转换为字符串
     if(ss==NULL)
     {
         return 0; //失败
     }
     else
     {
-        return cJSON_AddItemToArray(HmiRunCodeNum(cmdNum), cJSON_CreateString(ss)); //放入JSON
+        return cJSON_AddItemToArray(HmiRunCodeNum(cmdNum), cJSON_CreateString((const char *)ss)); //放入JSON
     }
 }
 /***********************************************/
 
-static int HmiTouchPageCreate(int new_num, int old_num)
+static int HmiTouchPageCreate(size_t new_num, size_t old_num)
 {
     char sss[32] = {0};
     printf("new: %#X, old: %#X\r\n", new_num, old_num);
@@ -487,14 +488,14 @@ static int HmiTouchPageCreate(int new_num, int old_num)
     return 1; //失败
 }
 
-int DW_TouchFileDecode(char *_fptr, size_t file_size)
+int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
 {
-    unsigned char s = 0;
+    uint8_t s = 0;
     size_t dest = 0;
     int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
     // char pic_path[PATH_LEN];
-    int runNum = 0;
-    int old = 0;
+    size_t runNum = 0;
+    size_t old = 0;
 
     // RectInfo pic;
     // pic.pixelByte = 4;
@@ -504,7 +505,7 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
     // if (state) //按下
     {
         dest = 0;
-        // while (_fptr[dest] != 0XFF && _fptr[dest + 1] != 0XFF)
+        while (_fptr[dest] != 0XFF && _fptr[dest + 1] != 0XFF)
         {
             if(dest >= file_size)
                 return 0;
@@ -519,18 +520,17 @@ int DW_TouchFileDecode(char *_fptr, size_t file_size)
             cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", cJSON_False);   
             {
                 //按键范围
-                x1 = ((int)_fptr[dest + 2] << 8) + (unsigned char)(_fptr[dest + 3]);
+                x1 = ((int)_fptr[dest + 2] << 8) + _fptr[dest + 3];
                 y1 = ((int)_fptr[dest + 4] << 8) + _fptr[dest + 5];
                 x2 = ((int)_fptr[dest + 6] << 8) + _fptr[dest + 7];
                 y2 = ((int)_fptr[dest + 8] << 8) + _fptr[dest + 9];
-                printf("x1: %#X, %#X, %#X\r\n", x1, _fptr[dest + 2], _fptr[dest + 3]);
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x1", x1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "y1", y1); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "x2", x2); 
                 cJSON_AddNumberToObject(HmiCfg_key_branch, "y2", y2);  
 
                 {
-                    if (((u16)_fptr[dest + 12] << 8) + _fptr[dest + 13] != 0XFF00)
+                    if (((uint16_t)_fptr[dest + 12] << 8) + _fptr[dest + 13] != 0XFF00)
                     { //有按下效果
                         dwCutPic(_fptr[dest + 13], x1, y1, x2, y2, x1, y1);
                         HmiRunCodeGenerate(HmiRunCodeNumCreate());
@@ -676,7 +676,7 @@ int DW_DisFileDecode(char *_fptr, size_t file_size)
 
     for (i = 0; i < 256; i+=4) //here page number max 256
     {
-        if (*fptr_page & 0XF0 == 0X40) //page start symbol
+        if ((*fptr_page & 0XF0) == 0X40) //page start symbol
         {
             //this page has control number
             for (j = 0; j < *(fptr_page+2); j++)
@@ -702,7 +702,7 @@ int DW_DisFileDecode(char *_fptr, size_t file_size)
 void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
 {
     int error = 0;
-    unsigned char* _fptr = NULL;
+    unsigned char *_fptr = NULL;
     size_t file_size = 0;
 
     HMIConfig = cJSON_CreateObject();
@@ -741,6 +741,7 @@ void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
     }
 
     dwRemove();
+    HMI_JSON_remove();
 }
 
 #endif

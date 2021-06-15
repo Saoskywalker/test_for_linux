@@ -144,7 +144,7 @@ void dwStopMusic(void);
 void dwPlayVol(u8 i);
 
 //获取发送数据缓存地址
-int dwGetSendData(u8 **i);
+unsigned int dwGetSendData(u8 **i);
 
 char dwMount(void);
 
