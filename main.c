@@ -376,6 +376,7 @@ typedef enum
 }ctrl_type;
 
 #define DW_MAX_PAGE 256
+#define STRING_TEMP_SIZE 256*3 //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
 
 static uint8_t *string_temp = NULL;
 static size_t hmiCmdCnt = 0;
@@ -386,7 +387,7 @@ static cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
 int HMI_JSON_create_init(void)
 {
     hmiCmdCnt = 0;
-    string_temp = (uint8_t *)malloc(256*3); //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
+    string_temp = (uint8_t *)malloc(STRING_TEMP_SIZE); 
 
     if(string_temp==NULL)
         return 1; //失败
@@ -434,7 +435,7 @@ static uint8_t *HmiJsonBtos(uint8_t *b, size_t count)
 static size_t HmiRunCodeNumCreate(void)
 {
     //生成新运行代码号
-    return hmiCmdCnt++;
+    return ++hmiCmdCnt;
 }
 
 static cJSON *HmiRunCodeNum(size_t i)
@@ -454,6 +455,8 @@ static int HmiRunCodeGenerate(size_t cmdNum)
     size_t cnt = 0;
 
 	cnt = dwGetSendData(&data); //生成命令数组
+    if (cnt * 3 > STRING_TEMP_SIZE)
+        return 0;                //过长
     ss = HmiJsonBtos(data, cnt); //命令数组转换为字符串
     if(ss==NULL)
     {
@@ -466,26 +469,17 @@ static int HmiRunCodeGenerate(size_t cmdNum)
 }
 /***********************************************/
 
-static int HmiTouchPageCreate(size_t new_num, size_t old_num)
+static void HmiTouchPageCreate(size_t new_num, size_t old_num)
 {
     char sss[32] = {0};
-    printf("new: %#X, old: %#X\r\n", new_num, old_num);
-    //注意
-    // if (old_num <= new_num)
-    {
-        if (old_num < new_num) //新增页号
-        {
-            sprintf(sss, "display-number@%d", new_num);
-            HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss);
-            HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key");
-        }
-        else //不用新增
-        {
-        }
-        return 0; //成功
-    }
 
-    return 1; //失败
+    //注意, 文件里相同页号控件要集中一起, 不然漏掉出错
+    if (old_num != new_num) //新增页号
+    {
+        sprintf(sss, "display-number@%d", new_num);
+        HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss);
+        HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key");
+    }
 }
 
 int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
@@ -509,15 +503,14 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
         {
             if(dest >= file_size)
                 return 0;
-            //需要判断是否同一页
-            if(HmiTouchPageCreate(_fptr[dest + 1], old))
-                return 2;
+            
+            HmiTouchPageCreate(_fptr[dest + 1], old); //需要判断是否同一页
             old = _fptr[dest + 1];
 
             cJSON_AddItemToArray(HmiCfg_key, HmiCfg_key_branch = cJSON_CreateObject());
             cJSON_AddStringToObject(HmiCfg_key_branch, "name", ""); 
             cJSON_AddStringToObject(HmiCfg_key_branch, "type", "click");   
-            cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", cJSON_False);   
+            cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", false);   
             {
                 //按键范围
                 x1 = ((int)_fptr[dest + 2] << 8) + _fptr[dest + 3];
@@ -560,7 +553,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
                         {
                             cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", ((int)_fptr[dest + 14]<<8)|
                                                     (_fptr[dest + 15])); 
-                            cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", cJSON_True);
+                            cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", true);
                             dest += 16;
                         }
                     }
