@@ -368,23 +368,18 @@ int test_sdl_bmp(int argc, char **argv);
 
 #include "dwDriver.h"
 
-typedef enum 
-{
-    ctrl_key = 0,
-    ctrl_text,
-    ctrl_picture
-}ctrl_type;
-
 #define DW_MAX_PAGE 256
 #define STRING_TEMP_SIZE 256*3 //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
 
-static uint8_t *string_temp = NULL;
+static size_t _old_num = 65535; //由于新旧对比生成新页, 禁止头为65535, 不然此页生成出错
 static size_t hmiCmdCnt = 0;
-static cJSON *HMIConfig = NULL, *HmiCfg_display_number= NULL, *HmiCfg_key= NULL,
-        *HmiCfg_key_branch= NULL;
+static uint8_t *string_temp = NULL;
+static cJSON *HMIConfig = NULL, *HmiCfg_display_number = NULL, *HmiCfg_key = NULL, *HmiCfg_control = NULL,
+        *HmiCfg_text = NULL, *HmiCfg_pic = NULL;
 
 int HMI_JSON_create_init(void)
 {
+    _old_num = 65535;
     hmiCmdCnt = 0;
     string_temp = (uint8_t *)malloc(STRING_TEMP_SIZE); 
 
@@ -471,34 +466,42 @@ static int HmiRunCodeGenerate(char *sss)
 }
 /***********************************************/
 
-static void HmiTouchPageCreate(size_t new_num, size_t old_num)
+//页生成, 并初始化控件类型
+static void HmiPageCreate(size_t new_num)
 {
     char sss[32] = {0};
 
-    //注意, 文件里相同页号控件要集中一起, 不然漏掉出错
-    if (old_num != new_num) //新旧页号不一致
+    if (_old_num != new_num) //新旧页号不一致
     {
         sprintf(sss, "display-number@%d", (int)new_num);
         HmiCfg_display_number = cJSON_GetObjectItem(HMIConfig, sss); //检查页面是否生成过
         if (HmiCfg_display_number == NULL)
         {
             HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss); //新增页号
+            //在此添加类型
             HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key"); //新页号生成控件组
+            HmiCfg_text = cJSON_AddArrayToObject(HmiCfg_display_number, "text");
             // HmiCfg_slide = cJSON_AddArrayToObject(HmiCfg_display_number, "slide");
             // HmiCfg_keyboard = cJSON_AddArrayToObject(HmiCfg_display_number, "keyboard");
         }
         else
         {
+            //在此添加类型
             HmiCfg_key = cJSON_GetObjectItem(HmiCfg_display_number, "key"); //恢复控件组
+            HmiCfg_text = cJSON_GetObjectItem(HmiCfg_display_number, "text");
+            // HmiCfg_slide = cJSON_GetObjectItem(HmiCfg_display_number, "slide");
+            // HmiCfg_keyboard = cJSON_GetObjectItem(HmiCfg_display_number, "keyboard");
         }
+        _old_num = new_num;
     }
 }
 
+//按键值返回
 static void HmiTouchKey(uint8_t *_fptr, size_t *afterOffset)
 {
-    cJSON_AddItemToArray(HmiCfg_key, HmiCfg_key_branch); //放到key组
-    cJSON_AddStringToObject(HmiCfg_key_branch, "type", "click");
-    cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", false);
+    cJSON_AddItemToArray(HmiCfg_key, HmiCfg_control); //放到key组
+    cJSON_AddStringToObject(HmiCfg_control, "type", "click");
+    cJSON_AddBoolToObject(HmiCfg_control, "storage-bool", false);
 
     if (_fptr[14] != 0XFF) //判断是否发送键值
     {
@@ -506,11 +509,11 @@ static void HmiTouchKey(uint8_t *_fptr, size_t *afterOffset)
         {
             if (_fptr[16] == 0XFE) //DGUS每个触控的扩展标志(以16个字节为一组, 第二组开始, 每组开头0XFE)
             {
-                cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", 
+                cJSON_AddNumberToObject(HmiCfg_control, "key-code", 
                                             ((uint16_t)_fptr[20] << 8) | (_fptr[21])); //键值
-                cJSON_AddNumberToObject(HmiCfg_key_branch, "address",
+                cJSON_AddNumberToObject(HmiCfg_control, "address",
                                         ((uint16_t)_fptr[17] << 8) + _fptr[18]); //控件号
-                cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", true); //自动上传键值
+                cJSON_AddBoolToObject(HmiCfg_control, "auto-send", true); //自动上传键值
             }
             *afterOffset += 32; //每个控件存储偏移值
         }
@@ -520,11 +523,11 @@ static void HmiTouchKey(uint8_t *_fptr, size_t *afterOffset)
             {
                 if (_fptr[16] == 0XFE) //DGUS每个触控的扩展标志(以16个字节为一组, 第二组开始, 每组开头0XFE)
                 {
-                    cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", 
+                    cJSON_AddNumberToObject(HmiCfg_control, "key-code", 
                                             ((uint16_t)_fptr[20] << 8) | (_fptr[21])); //键值
-                    cJSON_AddNumberToObject(HmiCfg_key_branch, "address",
+                    cJSON_AddNumberToObject(HmiCfg_control, "address",
                                             ((uint16_t)_fptr[17] << 8) + _fptr[18]); //控件号
-                    cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", false);    //不上传键值
+                    cJSON_AddBoolToObject(HmiCfg_control, "auto-send", false);    //不上传键值
                 }
                 *afterOffset += 32; //每个控件存储偏移值
             }
@@ -532,18 +535,19 @@ static void HmiTouchKey(uint8_t *_fptr, size_t *afterOffset)
     }
 }
 
+//指令集版本, 按键值返回
 static void HmiTouchKey_Command(uint8_t *_fptr, size_t *afterOffset)
 {
-    cJSON_AddItemToArray(HmiCfg_key, HmiCfg_key_branch); //放到key组
-    cJSON_AddStringToObject(HmiCfg_key_branch, "type", "click");
-    cJSON_AddBoolToObject(HmiCfg_key_branch, "storage-bool", false);
+    cJSON_AddItemToArray(HmiCfg_key, HmiCfg_control); //放到key组
+    cJSON_AddStringToObject(HmiCfg_control, "type", "click");
+    cJSON_AddBoolToObject(HmiCfg_control, "storage-bool", false);
 
     if (_fptr[14] != 0XFF) //判断是否发送键值
     {
-        cJSON_AddNumberToObject(HmiCfg_key_branch, "key-code", 
+        cJSON_AddNumberToObject(HmiCfg_control, "key-code", 
                                 ((uint16_t)_fptr[14] << 8) | (_fptr[15])); //键值
-        cJSON_AddNumberToObject(HmiCfg_key_branch, "address", 4224); //固定控件号: 0X1080
-        cJSON_AddBoolToObject(HmiCfg_key_branch, "auto-send", true); //自动上传键值
+        cJSON_AddNumberToObject(HmiCfg_control, "address", 4224); //固定控件号: 0X1080
+        cJSON_AddBoolToObject(HmiCfg_control, "auto-send", true); //自动上传键值
     }
     *afterOffset += 16; //每个控件存储偏移值
 }
@@ -553,7 +557,6 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
     char sss[16] = {0};
     size_t dest = 0;
     int x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-    size_t old = 65535; //由于新旧对比生成新页, 禁止头为65535, 不然此页生成出错
     uint8_t version = 0;
 
     dest = 0;
@@ -562,22 +565,21 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
         if(dest >= file_size)
             return 0;
         
-        HmiTouchPageCreate(_fptr[dest + 1], old); //需要判断是否同一页
-        old = _fptr[dest + 1];
+        HmiPageCreate(_fptr[dest + 1]); //需要判断是否同一页
 
         //新增控件
-        HmiCfg_key_branch = cJSON_CreateObject();
-        cJSON_AddStringToObject(HmiCfg_key_branch, "name", ""); 
+        HmiCfg_control = cJSON_CreateObject();
+        cJSON_AddStringToObject(HmiCfg_control, "name", ""); 
 
         //按键范围
         x1 = ((int)_fptr[dest + 2] << 8) + _fptr[dest + 3];
         y1 = ((int)_fptr[dest + 4] << 8) + _fptr[dest + 5];
         x2 = ((int)_fptr[dest + 6] << 8) + _fptr[dest + 7];
         y2 = ((int)_fptr[dest + 8] << 8) + _fptr[dest + 9];
-        cJSON_AddNumberToObject(HmiCfg_key_branch, "x1", x1); 
-        cJSON_AddNumberToObject(HmiCfg_key_branch, "y1", y1); 
-        cJSON_AddNumberToObject(HmiCfg_key_branch, "x2", x2); 
-        cJSON_AddNumberToObject(HmiCfg_key_branch, "y2", y2);  
+        cJSON_AddNumberToObject(HmiCfg_control, "x1", x1); 
+        cJSON_AddNumberToObject(HmiCfg_control, "y1", y1); 
+        cJSON_AddNumberToObject(HmiCfg_control, "x2", x2); 
+        cJSON_AddNumberToObject(HmiCfg_control, "y2", y2);  
 
         //按下
         if (((uint16_t)_fptr[dest + 12] << 8) + _fptr[dest + 13] != 0XFF00)
@@ -586,7 +588,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
             //生成按下运行命令
             memset(sss, 0, sizeof(sss));
             sprintf(sss, "code-group@%d", (int)HmiRunCodeNumCreate());
-            cJSON_AddStringToObject(HmiCfg_key_branch, "run-down", sss);
+            cJSON_AddStringToObject(HmiCfg_control, "run-down", sss);
             HmiRunCodeGenerate(sss);
         }
 
@@ -596,7 +598,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
             dwDisPicNoL(_fptr[dest + 11]);
             memset(sss, 0, sizeof(sss));
             sprintf(sss, "code-group@%d", (int)HmiRunCodeNumCreate());
-            cJSON_AddStringToObject(HmiCfg_key_branch, "run-up", sss);
+            cJSON_AddStringToObject(HmiCfg_control, "run-up", sss);
             HmiRunCodeGenerate(sss);
         }
         else if (((uint16_t)_fptr[dest + 12] << 8) + _fptr[dest + 13] != 0XFF00)
@@ -604,7 +606,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
             dwCutPic(_fptr[dest + 1], x1, y1, x2, y2, x1, y1);
             memset(sss, 0, sizeof(sss));
             sprintf(sss, "code-group@%d", (int)HmiRunCodeNumCreate());
-            cJSON_AddStringToObject(HmiCfg_key_branch, "run-up", sss);
+            cJSON_AddStringToObject(HmiCfg_control, "run-up", sss);
             HmiRunCodeGenerate(sss);
         }
         
@@ -613,6 +615,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
         { //DGUS版本
             if (_fptr[dest + 15] == 0X05) //按键值返回
                 HmiTouchKey(&_fptr[dest], &dest);
+            //在此添加类型
         }
         else
         { //指令集版本
@@ -630,67 +633,103 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
     return 0; //success
 }
 
-int DW_KeyCtrlDecode(char *ctrl)
+/************显示控件组成***********/
+//ctrl[0]==0X5A //头, 固定
+//ctrl[1] //控件类型
+//((uint16_t)ctrl[2]<<8)|ctrl[3] //SP指针: 指定控件描述内容的存放位置(从ROM加载后存储到RAM的地址指针, 一般0XFFFF)
+//(((uint16_t)ctrl[4]<<8)|ctrl[5])*2 //控件描述内容长度(字节)
+//((uint16_t)ctrl[6]<<8)|ctrl[7] //VP指针: 控件号0x0000-0xFFFF，有些无需指定地址的，写0x0000即可。
+//后面为详细描述内容
+//控件描述内容(组成: 控件号至控件描述内容长度最后字节)
+/********************************************/
+
+static uint32_t RGB565to888(uint16_t pencolor) //rgb565转rgb888,透明通道为非透
 {
+	uint32_t tempColor = 0;
+	tempColor = (pencolor & 0X0000001F) << 3;  //B
+	tempColor |= (pencolor & 0X000007E0) << 5; //G
+	tempColor |= ((pencolor & 0X0000F800) << 8) | 0XFF000000; //R & alpha
+	return tempColor;
+}
+
+//文本显示
+int HmiDisText(uint8_t *_fptr)
+{
+    uint8_t *ss = NULL;
+    int x1 = 0, y1 = 0;
+    uint32_t color = 0;
+
+    if(_fptr[0]!=0X5A) //头
+        return 1; //fail
+
+    _fptr += 6; //控件描述内容偏移
+
+    //新增控件
+    HmiCfg_control = cJSON_CreateObject();
+    cJSON_AddItemToArray(HmiCfg_text, HmiCfg_control); //放到text组
+
+    cJSON_AddStringToObject(HmiCfg_control, "name", ""); 
+    cJSON_AddNumberToObject(HmiCfg_control, "address", ((uint16_t)_fptr[0] << 8) + _fptr[1]); //控件号
+    x1 = ((int)_fptr[2]<<8)|_fptr[3];
+    y1 = ((int)_fptr[4]<<8)|_fptr[5];
+    cJSON_AddNumberToObject(HmiCfg_control, "x1", x1); 
+    cJSON_AddNumberToObject(HmiCfg_control, "y1", y1);
+    color = RGB565to888(((uint16_t)_fptr[6]<<8)|_fptr[7]);
+    ss = HmiJsonBtos((uint8_t *)&color, sizeof(color));
+    cJSON_AddStringToObject(HmiCfg_control, "color", (char *)ss);
+
     return 0; //success
 }
 
-int DW_TextCtrlDecode(char *ctrl)
+//变量图标显示
+int HmiDisPic(uint8_t *_fptr)
 {
-        if(*ctrl!=0X5A)
+        if(*_fptr!=0X5A)
         return 1; //fail
 
         return 0; //success
 }
 
-int DW_PicCtrlDecode(char *ctrl)
-{
-        if(*ctrl!=0X5A)
-        return 1; //fail
-
-        return 0; //success
-}
-
-static int DW_DisCtrlDecode(char *ctrl)
+static int DW_DisCtrlDecode(uint8_t *_fptr)
 { //control decode and put to json
+    int res = 0;
     
-    if(*ctrl!=0X5A)
-        return 1; //fail
-    
-    switch (*ctrl) //check ctrl type
+    switch (_fptr[1]) //check ctrl type
     {
-    case ctrl_text:
-        /* run */
-        break;
-    
-    default:
-        return 2; //fail
-        break;
+    case 0X11: res = HmiDisText(_fptr); break; //文本显示
+    case 0X00: res = HmiDisPic(_fptr); break; //变量图标显示
+    default: res = 2; break; //fail 
     }
 
-    return 0; //success
+    return res; //success
 }
 
-int DW_DisFileDecode(char *_fptr, size_t file_size)
+int DW_DisFileDecode(uint8_t *_fptr, size_t file_size)
 {
     size_t i = 0, j = 0;
-    const char head_code[] = {0X14, 0X44, 0X47, 0X55, 0X53, 0X5F, 0X32};
-    char *fptr_page = _fptr, *fptr_control = _fptr+0X4000;
+    //this file composition: 1.file head; 2. every page control number; 3.control information
+    const char head_code[] = {0X14, 0X44, 0X47, 0X55, 0X53, 0X5F, 0X32}; //file head
+    uint8_t *fptr_page = _fptr+18; //every page control number
+    uint8_t *fptr_control = _fptr+0X4000; //control information start
 
-    //check head
+    //check head 
     for (i = 0; i < sizeof(head_code); i++)
     {
-        if (*_fptr!=head_code[i])
+        if (_fptr[i]!=head_code[i])
             return 1; //fail
     }
-    fptr_page += 18;
 
-    for (i = 0; i < 256; i+=4) //here page number max 256
+    for (i = 0; i < 256; i++) //here page number max 256
     {
-        if ((*fptr_page & 0XF0) == 0X40) //page start symbol
+        if ((*fptr_page & 0XF0) == 0X40) //page tail symbol
         {
             //this page has control number
-            for (j = 0; j < *(fptr_page+2); j++)
+            if(*(fptr_page-2)!=0) //此页有控件
+                HmiPageCreate(i); //需要判断是否同一页
+            else
+                break;
+                
+            for (j = 0; j < *(fptr_page-2); j++)
             {
                 // if(fptr_control-_fptr>=file_size)
                 //     return 2; //fail
@@ -698,13 +737,14 @@ int DW_DisFileDecode(char *_fptr, size_t file_size)
                     return 0;
                 if(*fptr_control==0X5A) //control start is 0X5A
                     DW_DisCtrlDecode(fptr_control);
-                fptr_control+=32; //next controll
+                fptr_control+=32; //next controll info offset is 32
             }
         }
         else
         {
             break;
         }
+        fptr_page+=4; //next number info offset is 4
     }
 
     return 0; //success
@@ -727,20 +767,27 @@ void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
     cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行命令组为1 
     HmiRunCodeGenerate("code-group@1");               
     
-    error = MTF_load_file(&_fptr, &file_size, nameTouchSrc);
+    // error = MTF_load_file(&_fptr, &file_size, nameTouchSrc);
+    // if(!error)
+    // {
+    //     error = DW_TouchFileDecode(_fptr, file_size);
+    //     free(_fptr);
+    //     // if(!error)
+    //     // {
+    //     //     error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
+    //     //     if(!error)
+    //     //     {
+    //     //         error = DW_DisFileDecode(_fptr, file_size);
+    //     //         free(_fptr);
+    //     //     }
+    //     // }
+    // }
+
+    error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
     if(!error)
     {
-        error = DW_TouchFileDecode(_fptr, file_size);
+        error = DW_DisFileDecode(_fptr, file_size);
         free(_fptr);
-        // if(!error)
-        // {
-        //     error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
-        //     if(!error)
-        //     {
-        //         error = DW_DisFileDecode(_fptr, file_size);
-        //         free(_fptr);
-        //     }
-        // }
     }
 
     if (!error)
@@ -752,7 +799,7 @@ void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
     }
     else
     {
-        printf("decode error\r\n");
+        printf("decode error: %d\r\n", error);
     }
 
     dwRemove();
@@ -768,7 +815,7 @@ int main(int argc, char *argv[])
 
     /* Now some samplecode for building objects concisely: */
     // create_objects();
-    test_DW_file_decode(NULL, "./touch.bin", NULL);
+    test_DW_file_decode(NULL, "./touch.bin", "./display.bin");
 
     FILE *fp = NULL, *fp2 = NULL;
     char *tempData = NULL;
