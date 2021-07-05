@@ -374,8 +374,8 @@ int test_sdl_bmp(int argc, char **argv);
 static size_t _old_num = 65535; //由于新旧对比生成新页, 禁止头为65535, 不然此页生成出错
 static size_t hmiCmdCnt = 0;
 static uint8_t *string_temp = NULL;
-static cJSON *HMIConfig = NULL, *HmiCfg_display_number = NULL, *HmiCfg_key = NULL, *HmiCfg_control = NULL,
-        *HmiCfg_text = NULL, *HmiCfg_pic = NULL;
+static cJSON *HMIConfig = NULL, *HmiCfg_display_number = NULL, *HmiCfg_array = NULL, *HmiCfg_control = NULL,
+        *HmiCfg_page_run = NULL;
 
 int HMI_JSON_create_init(void)
 {
@@ -432,18 +432,18 @@ static size_t HmiRunCodeNumCreate(void)
     return ++hmiCmdCnt;
 }
 
-static cJSON *HmiRunCodeNum(char *sss)
+static cJSON *HmiArray(cJSON *object, char *sss)
 {
-    //生成运行代码数组
-    cJSON *runCodeGroup = NULL;
+    //生成某个数组
+    cJSON *_type = NULL;
     
-    runCodeGroup = cJSON_GetObjectItem(HMIConfig, sss); //检查运行代码组是否生成过
-    if (runCodeGroup == NULL)                           //生成新组
+    _type = cJSON_GetObjectItem(object, sss); //检查是否生成过
+    if (_type == NULL)                           //生成新组
     {
-        runCodeGroup = cJSON_CreateArray();
+        _type = cJSON_CreateArray();
     }
-    cJSON_AddItemToObject(HMIConfig, sss, runCodeGroup);
-    return runCodeGroup;
+    cJSON_AddItemToObject(object, sss, _type);
+    return _type;
 }
 
 static int HmiRunCodeGenerate(char *sss)
@@ -461,7 +461,8 @@ static int HmiRunCodeGenerate(char *sss)
     }
     else
     {
-        return cJSON_AddItemToArray(HmiRunCodeNum(sss), cJSON_CreateString((const char *)ss)); //放入JSON
+        return cJSON_AddItemToArray(HmiArray(HMIConfig, sss), 
+                                    cJSON_CreateString((const char *)ss)); //放入JSON
     }
 }
 /***********************************************/
@@ -479,18 +480,9 @@ static void HmiPageCreate(size_t new_num)
         {
             HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss); //新增页号
             //在此添加类型
-            HmiCfg_key = cJSON_AddArrayToObject(HmiCfg_display_number, "key"); //新页号生成控件组
-            HmiCfg_text = cJSON_AddArrayToObject(HmiCfg_display_number, "text");
-            // HmiCfg_slide = cJSON_AddArrayToObject(HmiCfg_display_number, "slide");
-            // HmiCfg_keyboard = cJSON_AddArrayToObject(HmiCfg_display_number, "keyboard");
-        }
-        else
-        {
-            //在此添加类型
-            HmiCfg_key = cJSON_GetObjectItem(HmiCfg_display_number, "key"); //恢复控件组
-            HmiCfg_text = cJSON_GetObjectItem(HmiCfg_display_number, "text");
-            // HmiCfg_slide = cJSON_GetObjectItem(HmiCfg_display_number, "slide");
-            // HmiCfg_keyboard = cJSON_GetObjectItem(HmiCfg_display_number, "keyboard");
+            memset(sss, 0, sizeof(sss)); //进入页时自动运行的命令
+            sprintf(sss, "code-group@%d", (int)HmiRunCodeNumCreate());
+            HmiCfg_page_run = cJSON_AddStringToObject(HmiCfg_display_number, "run", sss);
         }
         _old_num = new_num;
     }
@@ -499,7 +491,12 @@ static void HmiPageCreate(size_t new_num)
 //按键值返回
 static void HmiTouchKey(uint8_t *_fptr, size_t *afterOffset)
 {
-    cJSON_AddItemToArray(HmiCfg_key, HmiCfg_control); //放到key组
+    //新增控件
+    HmiCfg_control = cJSON_CreateObject();
+    HmiCfg_array = HmiArray(HmiCfg_display_number, "key"); //检查并生成数组
+    cJSON_AddItemToArray(HmiCfg_array, HmiCfg_control); //放到key组
+
+    cJSON_AddStringToObject(HmiCfg_control, "name", ""); 
     cJSON_AddStringToObject(HmiCfg_control, "type", "click");
     cJSON_AddBoolToObject(HmiCfg_control, "storage-bool", false);
 
@@ -538,7 +535,12 @@ static void HmiTouchKey(uint8_t *_fptr, size_t *afterOffset)
 //指令集版本, 按键值返回
 static void HmiTouchKey_Command(uint8_t *_fptr, size_t *afterOffset)
 {
-    cJSON_AddItemToArray(HmiCfg_key, HmiCfg_control); //放到key组
+    //新增控件
+    HmiCfg_control = cJSON_CreateObject();
+    HmiCfg_array = HmiArray(HmiCfg_display_number, "key"); //检查并生成数组
+    cJSON_AddItemToArray(HmiCfg_array, HmiCfg_control); //放到key组
+    
+    cJSON_AddStringToObject(HmiCfg_control, "name", "");
     cJSON_AddStringToObject(HmiCfg_control, "type", "click");
     cJSON_AddBoolToObject(HmiCfg_control, "storage-bool", false);
 
@@ -567,9 +569,19 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
         
         HmiPageCreate(_fptr[dest + 1]); //需要判断是否同一页
 
-        //新增控件
-        HmiCfg_control = cJSON_CreateObject();
-        cJSON_AddStringToObject(HmiCfg_control, "name", ""); 
+        //识别触控功能类型
+        if(_fptr[dest + 14]==0XFD||_fptr[dest + 14]==0XFE) //区分指令集版本和DGUS版本
+        { //DGUS版本
+            if (_fptr[dest + 15] == 0X05) //按键值返回
+                HmiTouchKey(&_fptr[dest], &dest);
+            //在此添加类型
+            continue;
+        }
+        else
+        { //指令集版本
+            version = 1;
+            HmiTouchKey_Command(&_fptr[dest], &dest);
+        }
 
         //按键范围
         x1 = ((int)_fptr[dest + 2] << 8) + _fptr[dest + 3];
@@ -609,19 +621,6 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
             cJSON_AddStringToObject(HmiCfg_control, "run-up", sss);
             HmiRunCodeGenerate(sss);
         }
-        
-        //识别触控功能类型
-        if(_fptr[dest + 14]==0XFD||_fptr[dest + 14]==0XFE) //区分指令集版本和DGUS版本
-        { //DGUS版本
-            if (_fptr[dest + 15] == 0X05) //按键值返回
-                HmiTouchKey(&_fptr[dest], &dest);
-            //在此添加类型
-        }
-        else
-        { //指令集版本
-            version = 1;
-            HmiTouchKey_Command(&_fptr[dest], &dest);
-        }
     }
 
     if (version == 1)
@@ -636,7 +635,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
 /************显示控件组成***********/
 //ctrl[0]==0X5A //头, 固定
 //ctrl[1] //控件类型
-//((uint16_t)ctrl[2]<<8)|ctrl[3] //SP指针: 指定控件描述内容的存放位置(从ROM加载后存储到RAM的地址指针, 一般0XFFFF)
+//((uint16_t)ctrl[2]<<8)|ctrl[3] //SP指针: 指定控件描述内容的存放位置(从ROM加载后存储到RAM的地址指针, 一般0XFFFF, 系统自定)
 //(((uint16_t)ctrl[4]<<8)|ctrl[5])*2 //控件描述内容长度(字节)
 //((uint16_t)ctrl[6]<<8)|ctrl[7] //VP指针: 控件号0x0000-0xFFFF，有些无需指定地址的，写0x0000即可。
 //后面为详细描述内容
@@ -656,6 +655,7 @@ static uint32_t RGB565to888(uint16_t pencolor) //rgb565转rgb888,透明通道为
 int HmiDisText(uint8_t *_fptr)
 {
     uint8_t *ss = NULL;
+    uint8_t temp[4] = {0};
     int x1 = 0, y1 = 0;
     uint32_t color = 0;
 
@@ -666,17 +666,27 @@ int HmiDisText(uint8_t *_fptr)
 
     //新增控件
     HmiCfg_control = cJSON_CreateObject();
-    cJSON_AddItemToArray(HmiCfg_text, HmiCfg_control); //放到text组
+    HmiCfg_array = HmiArray(HmiCfg_display_number, "text"); //检查并生成数组
+    cJSON_AddItemToArray(HmiCfg_array, HmiCfg_control); //放到text组
 
     cJSON_AddStringToObject(HmiCfg_control, "name", ""); 
     cJSON_AddNumberToObject(HmiCfg_control, "address", ((uint16_t)_fptr[0] << 8) + _fptr[1]); //控件号
+
     x1 = ((int)_fptr[2]<<8)|_fptr[3];
     y1 = ((int)_fptr[4]<<8)|_fptr[5];
     cJSON_AddNumberToObject(HmiCfg_control, "x1", x1); 
     cJSON_AddNumberToObject(HmiCfg_control, "y1", y1);
+
     color = RGB565to888(((uint16_t)_fptr[6]<<8)|_fptr[7]);
-    ss = HmiJsonBtos((uint8_t *)&color, sizeof(color));
+    temp[0] = (uint8_t)(color&0X00FF0000)>>16; //R
+    temp[1] = (uint8_t)(color&0X0000FF00)>>8; //G
+    temp[2] = (uint8_t)(color&0X000000FF); //B
+    ss = HmiJsonBtos((uint8_t *)&color, 3);
     cJSON_AddStringToObject(HmiCfg_control, "color", (char *)ss);
+
+    //每页进入时自动运行命令, 显示
+    // dwCutPic(_fptr[dest + 13], x1, y1, x2, y2, x1, y1);
+    // HmiRunCodeGenerate(HmiCfg_page_run->valuestring);
 
     return 0; //success
 }
@@ -726,25 +736,24 @@ int DW_DisFileDecode(uint8_t *_fptr, size_t file_size)
             //this page has control number
             if(*(fptr_page-2)!=0) //此页有控件
                 HmiPageCreate(i); //需要判断是否同一页
-            else
-                break;
                 
             for (j = 0; j < *(fptr_page-2); j++)
             {
-                // if(fptr_control-_fptr>=file_size)
-                //     return 2; //fail
+                if (fptr_control - _fptr >= file_size)
+                    return 2; //fail
                 if(*fptr_control==0XFF) //file tail is 0XFF
                     return 0;
                 if(*fptr_control==0X5A) //control start is 0X5A
                     DW_DisCtrlDecode(fptr_control);
-                fptr_control+=32; //next controll info offset is 32
+                fptr_control += 32; //next controll info offset is 32
             }
+
+            fptr_page += 4; //next number info offset is 4
         }
         else
         {
-            break;
+            return 2; //fail;
         }
-        fptr_page+=4; //next number info offset is 4
     }
 
     return 0; //success
