@@ -441,8 +441,8 @@ static cJSON *HmiArray(cJSON *object, char *sss)
     if (_type == NULL)                           //生成新组
     {
         _type = cJSON_CreateArray();
+        cJSON_AddItemToObject(object, sss, _type);
     }
-    cJSON_AddItemToObject(object, sss, _type);
     return _type;
 }
 
@@ -479,7 +479,7 @@ static void HmiPageCreate(size_t new_num)
         if (HmiCfg_display_number == NULL)
         {
             HmiCfg_display_number = cJSON_AddObjectToObject(HMIConfig, sss); //新增页号
-            //在此添加类型
+
             memset(sss, 0, sizeof(sss)); //进入页时自动运行的命令
             sprintf(sss, "code-group@%d", (int)HmiRunCodeNumCreate());
             HmiCfg_page_run = cJSON_AddStringToObject(HmiCfg_display_number, "run", sss);
@@ -575,7 +575,8 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
             if (_fptr[dest + 15] == 0X05) //按键值返回
                 HmiTouchKey(&_fptr[dest], &dest);
             //在此添加类型
-            continue;
+            else
+                continue;
         }
         else
         { //指令集版本
@@ -642,7 +643,7 @@ int DW_TouchFileDecode(uint8_t *_fptr, size_t file_size)
 //控件描述内容(组成: 控件号至控件描述内容长度最后字节)
 /********************************************/
 
-static uint32_t RGB565to888(uint16_t pencolor) //rgb565转rgb888,透明通道为非透
+static uint32_t _RGB565to888(uint16_t pencolor) //rgb565转rgb888,透明通道为非透
 {
 	uint32_t tempColor = 0;
 	tempColor = (pencolor & 0X0000001F) << 3;  //B
@@ -655,7 +656,7 @@ static uint32_t RGB565to888(uint16_t pencolor) //rgb565转rgb888,透明通道为
 int HmiDisText(uint8_t *_fptr)
 {
     uint8_t *ss = NULL;
-    uint8_t temp[4] = {0};
+    uint8_t temp[3] = {0};
     int x1 = 0, y1 = 0;
     uint32_t color = 0;
 
@@ -677,11 +678,11 @@ int HmiDisText(uint8_t *_fptr)
     cJSON_AddNumberToObject(HmiCfg_control, "x1", x1); 
     cJSON_AddNumberToObject(HmiCfg_control, "y1", y1);
 
-    color = RGB565to888(((uint16_t)_fptr[6]<<8)|_fptr[7]);
-    temp[0] = (uint8_t)(color&0X00FF0000)>>16; //R
-    temp[1] = (uint8_t)(color&0X0000FF00)>>8; //G
-    temp[2] = (uint8_t)(color&0X000000FF); //B
-    ss = HmiJsonBtos((uint8_t *)&color, 3);
+    color = _RGB565to888(((uint16_t)_fptr[6]<<8)|_fptr[7]);
+    temp[0] = (color&0X00FF0000)>>16; //R
+    temp[1] = (color&0X0000FF00)>>8; //G
+    temp[2] = (color&0X000000FF); //B
+    ss = HmiJsonBtos(temp, 3);
     cJSON_AddStringToObject(HmiCfg_control, "color", (char *)ss);
 
     //每页进入时自动运行命令, 显示
@@ -734,18 +735,20 @@ int DW_DisFileDecode(uint8_t *_fptr, size_t file_size)
         if ((*fptr_page & 0XF0) == 0X40) //page tail symbol
         {
             //this page has control number
-            if(*(fptr_page-2)!=0) //此页有控件
-                HmiPageCreate(i); //需要判断是否同一页
-                
-            for (j = 0; j < *(fptr_page-2); j++)
+            if (*(fptr_page - 2) != 0) //此页有控件
             {
-                if (fptr_control - _fptr >= file_size)
-                    return 2; //fail
-                if(*fptr_control==0XFF) //file tail is 0XFF
-                    return 0;
-                if(*fptr_control==0X5A) //control start is 0X5A
-                    DW_DisCtrlDecode(fptr_control);
-                fptr_control += 32; //next controll info offset is 32
+                HmiPageCreate(i); //生成此页JSON
+
+                for (j = 0; j < *(fptr_page - 2); j++)
+                {
+                    if (fptr_control - _fptr >= file_size)
+                        return 2;              //fail
+                    if (*fptr_control == 0XFF) //file tail is 0XFF
+                        return 0;
+                    if (*fptr_control == 0X5A) //control start is 0X5A
+                        DW_DisCtrlDecode(fptr_control);
+                    fptr_control += 32; //next controll info offset is 32
+                }
             }
 
             fptr_page += 4; //next number info offset is 4
