@@ -103,7 +103,7 @@ make_debug:
 	@ echo             make_debug     start
 	@ echo compiling iii $(DD) $(CC) $@
 	@ echo "*************************************************"
-	gcc -g -std=gnu99 -Wall -o OUTPUT/main_debug main.c ts_calibrate_common.c cJSON.c MTF_file.c dwDriver.c -lmingw32 -lSDL2main -lSDL2
+	gcc -g -std=gnu99 -Wall -o OUTPUT/main_debug main.c ts_calibrate_common.c cJSON.c MTF_file.c dwDriver.c dwDriveD2.c -lmingw32 -lSDL2main -lSDL2
 	@ echo "<><><><><><>><><>><><><><><><><><><>><><><><><><>"
 	@ echo            make_debug  compile ok
 	@ echo "<><><><><><>><><>><><><><><><><><><><><><><<><><>"
@@ -116,7 +116,7 @@ make_release:
 	@ echo             make_release     start
 	@ echo compiling iii $(DD) $(CC) $@
 	@ echo "*************************************************"
-	gcc -std=gnu99 -O3 -Wall -o OUTPUT/main_release main.c ts_calibrate_common.c cJSON.c MTF_file.c dwDriver.c -lmingw32 -lSDL2main -lSDL2
+	gcc -std=gnu99 -O3 -Wall -o OUTPUT/main_release main.c ts_calibrate_common.c cJSON.c MTF_file.c dwDriver.c dwDriveD2.c -lmingw32 -lSDL2main -lSDL2
 	@ echo "<><><><><><>><><>><><><><><><><><><>><><><><><><>"
 	@ echo            make_release  compile ok
 	@ echo "<><><><><><>><><>><><><><><><><><><><><><><<><><>"
