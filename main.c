@@ -732,7 +732,7 @@ int HmiDisPic(uint8_t *_fptr)
 
     cJSON_AddNumberToObject(HmiCfg_control, "photo", _fptr[14]);
     cJSON_AddNumberToObject(HmiCfg_control, "mode", _fptr[15]);
-
+    
     //每页进入时自动运行命令, 显示
     dwD2DisICO(((uint16_t)_fptr[0] << 8) + _fptr[1], 0);
     HmiRunCodeGenerate(HmiCfg_page_run->valuestring);
