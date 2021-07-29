@@ -44,26 +44,26 @@ char dwRemove(void)
 	return 0;
 }
 
-unsigned int dwGetSendData(u8 **i)
+void dwGetSendData(u8 **i, unsigned int **j)
 {
 	*i = _data;
-	return _data_cnt;
+	*j = &_data_cnt;
 }
 
 /*******发送帧头*********/
-static inline void dwSendStart(void)
+static __INLINE void dwSendStart(void)
 {
 	_data_cnt = 0;
 }
 
 /*******发送帧尾*********/
-static inline void dwSendOver(void)
+static __INLINE void dwSendOver(void)
 {
 	// MTF_Com_sendTail();
 }
 
 /***发送帧用户数据***/
-static inline void dwSendBuf(u8 byte)
+static __INLINE void dwSendBuf(u8 byte)
 {
 	if (_data_cnt < BUF_MAX)
 	{

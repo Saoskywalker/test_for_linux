@@ -1,7 +1,7 @@
 #ifndef __DWDRIVER_H
 #define __DWDRIVER_H
 
-#include "types_plus.h"
+#include "platform.h"
 
 #define DW_COL_RED		0xF800
 #define DW_COL_GREEN	0x07E0
@@ -143,8 +143,8 @@ void dwStopMusic(void);
 //调节音量
 void dwPlayVol(u8 i);
 
-//获取发送数据缓存地址
-unsigned int dwGetSendData(u8 **i);
+//获取发送数据缓存地址, 和数据长度地址
+void dwGetSendData(u8 **i, unsigned int **j);
 
 char dwMount(void);
 
