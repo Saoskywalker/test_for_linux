@@ -48,6 +48,8 @@ static int print_preallocated(cJSON *root)
     char *buf_fail = NULL;
     size_t len = 0;
     size_t len_fail = 0;
+    FILE *fp = NULL;
+    size_t total = 1;
 
     /* formatted print */
     out = cJSON_Print(root);
@@ -88,8 +90,17 @@ static int print_preallocated(cJSON *root)
     }
 
     /* success */
-    printf("%s\n", buf);
+    printf("%s\n", buf); //打印输出JSON
 
+    /*输出JSON文件*/
+    while(buf[total]) //检查字节数
+    {
+        total++;
+    }
+    fp = fopen("./OUTPUT/out.json", "wb+"); //读写生成打开
+    fwrite(buf, 1, total, fp);
+    fclose(fp);
+    
     /* force it to fail */
     if (cJSON_PrintPreallocated(root, buf_fail, (int)len_fail, 1))
     {
@@ -367,6 +378,7 @@ int test_sdl_bmp(int argc, char **argv);
 #if 1
 
 #include "dwDriver.h"
+#include "dwDriveD2.h"
 
 #define DW_MAX_PAGE 256
 #define STRING_TEMP_SIZE 256*3 //256为待转换最大字节数, 转换后, 1字节变两个字符加一个空格(字符串末尾空格变为0), 所以为3
@@ -449,12 +461,12 @@ static cJSON *HmiArray(cJSON *object, char *sss)
 static int HmiRunCodeGenerate(char *sss)
 {
     uint8_t *data = NULL, *ss = NULL;
-    size_t cnt = 0;
+    unsigned int *cnt = NULL;
 
-	cnt = dwGetSendData(&data); //生成命令数组
-    if (cnt * 3 > STRING_TEMP_SIZE)
+	dwGetSendData(&data, &cnt); //生成命令数组
+    if (*cnt * 3 > STRING_TEMP_SIZE)
         return 0;                //过长
-    ss = HmiJsonBtos(data, cnt); //命令数组转换为字符串
+    ss = HmiJsonBtos(data, (size_t)(*cnt)); //命令数组转换为字符串
     if(ss==NULL)
     {
         return 0; //失败
@@ -685,9 +697,12 @@ int HmiDisText(uint8_t *_fptr)
     ss = HmiJsonBtos(temp, 3);
     cJSON_AddStringToObject(HmiCfg_control, "color", (char *)ss);
 
+    cJSON_AddNumberToObject(HmiCfg_control, "font", _fptr[19]);
+    cJSON_AddNumberToObject(HmiCfg_control, "size", _fptr[21]); 
+
     //每页进入时自动运行命令, 显示
-    // dwCutPic(_fptr[dest + 13], x1, y1, x2, y2, x1, y1);
-    // HmiRunCodeGenerate(HmiCfg_page_run->valuestring);
+    dwD2DisString(((uint16_t)_fptr[0] << 8) + _fptr[1], "");
+    HmiRunCodeGenerate(HmiCfg_page_run->valuestring);
 
     return 0; //success
 }
@@ -695,10 +710,34 @@ int HmiDisText(uint8_t *_fptr)
 //变量图标显示
 int HmiDisPic(uint8_t *_fptr)
 {
-        if(*_fptr!=0X5A)
-        return 1; //fail
+    int x1 = 0, y1 = 0;
 
-        return 0; //success
+    if (_fptr[0] != 0X5A) //头
+        return 1;         //fail
+
+    _fptr += 6; //控件描述内容偏移
+
+    //新增控件
+    HmiCfg_control = cJSON_CreateObject();
+    HmiCfg_array = HmiArray(HmiCfg_display_number, "picture"); //检查并生成数组
+    cJSON_AddItemToArray(HmiCfg_array, HmiCfg_control);     //放到text组
+
+    cJSON_AddStringToObject(HmiCfg_control, "name", "");
+    cJSON_AddNumberToObject(HmiCfg_control, "address", ((uint16_t)_fptr[0] << 8) + _fptr[1]); //控件号
+
+    x1 = ((int)_fptr[2] << 8) | _fptr[3];
+    y1 = ((int)_fptr[4] << 8) | _fptr[5];
+    cJSON_AddNumberToObject(HmiCfg_control, "x1", x1);
+    cJSON_AddNumberToObject(HmiCfg_control, "y1", y1);
+
+    cJSON_AddNumberToObject(HmiCfg_control, "photo", _fptr[14]);
+    cJSON_AddNumberToObject(HmiCfg_control, "mode", _fptr[15]);
+
+    //每页进入时自动运行命令, 显示
+    dwD2DisICO(((uint16_t)_fptr[0] << 8) + _fptr[1], 0);
+    HmiRunCodeGenerate(HmiCfg_page_run->valuestring);
+
+    return 0; //success
 }
 
 static int DW_DisCtrlDecode(uint8_t *_fptr)
@@ -774,33 +813,33 @@ void test_DW_file_decode(char *nameDest, char *nameTouchSrc, char *nameDisSrc)
     HMIConfig = cJSON_CreateObject();
     cJSON_AddStringToObject(HMIConfig, "version", "MTF_HMI"); //HMI版本号
 
-    dwDisPicNoL(0); //默认开机0号图片
+    dwD2DisPicNoL(0); //默认开机0号图片
     HmiRunCodeNumCreate();
     cJSON_AddStringToObject(HMIConfig, "run", "code-group@1"); //开机运行命令组为1 
     HmiRunCodeGenerate("code-group@1");               
     
-    // error = MTF_load_file(&_fptr, &file_size, nameTouchSrc);
-    // if(!error)
-    // {
-    //     error = DW_TouchFileDecode(_fptr, file_size);
-    //     free(_fptr);
-    //     // if(!error)
-    //     // {
-    //     //     error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
-    //     //     if(!error)
-    //     //     {
-    //     //         error = DW_DisFileDecode(_fptr, file_size);
-    //     //         free(_fptr);
-    //     //     }
-    //     // }
-    // }
-
-    error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
+    error = MTF_load_file(&_fptr, &file_size, nameTouchSrc);
     if(!error)
     {
-        error = DW_DisFileDecode(_fptr, file_size);
+        error = DW_TouchFileDecode(_fptr, file_size);
         free(_fptr);
+        if(!error)
+        {
+            error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
+            if(!error)
+            {
+                error = DW_DisFileDecode(_fptr, file_size);
+                free(_fptr);
+            }
+        }
     }
+
+    // error = MTF_load_file(&_fptr, &file_size, nameDisSrc);
+    // if(!error)
+    // {
+    //     error = DW_DisFileDecode(_fptr, file_size);
+    //     free(_fptr);
+    // }
 
     if (!error)
     {
