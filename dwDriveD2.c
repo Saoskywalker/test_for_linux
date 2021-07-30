@@ -29,7 +29,7 @@ u8 dwD2RecSta = 0, dwD2SendSta = 0, dwD2Lang = 0, dwD2RecDataBusy = 0;
 /*************************
  * Function: send 1 byte to uart
  * **********************/
-static __INLINE dwD2Send(u8 b)
+static __INLINE void dwD2Send(u8 b)
 {
 	// uasrt2SendByte(b);
 #ifdef D2_CHECK_CODE_ENABLE
