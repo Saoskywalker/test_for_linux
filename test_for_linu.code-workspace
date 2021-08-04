@@ -1,0 +1,22 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"files.autoSave": "afterDelay",
+		"files.autoSaveDelay": 30000,
+		"terminal.integrated.defaultProfile.windows": "Git Bash",
+		"files.associations": {
+			"malloc.h": "c",
+			"stdio.h": "c",
+			"stdint.h": "c",
+			"string.h": "c",
+			"Data_EEP.C": "cpp",
+			"cstdio": "c",
+			"dw_filedecodelib.h": "c",
+			"types_plus.h": "c"
+		},
+	}
+}

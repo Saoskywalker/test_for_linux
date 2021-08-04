@@ -3,9 +3,10 @@
     "tasks": [
         {
             "label": "make_debug",
+            "type": "shell",
             "command": "mingw32-make",
             "args": [
-                "make_debug"
+                "DEBUG=1"
             ],
             "problemMatcher": {
                 "owner": "c",
@@ -25,9 +26,10 @@
         },
         {
             "label": "make_release",
+            "type": "shell",
             "command": "mingw32-make",
             "args": [
-                "make_release"
+                "DEBUG=0"
             ],
             "problemMatcher": {
                 "owner": "c",
