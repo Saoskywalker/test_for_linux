@@ -15,7 +15,7 @@ PROG ?= APP
 EXTENSION ?= .exe
 
 # define output dir
-BUILD ?= OUTPUT
+BUILD ?= build
 
 # define command
 RM = rm
@@ -48,12 +48,12 @@ ifeq ($(DEBUG), 1)
 PROG = main_debug
 ASFLAGS		= -g -ggdb -Wall -O0 -ffreestanding -std=gnu99 $(DEFINES)
 CFLAGS		= -g -ggdb -Wall -O0 -ffreestanding -std=gnu99 $(DEFINES)
-CXXFLAGS	= -g -ggdb -Wall -O0 -ffreestanding -std=gnu99 $(DEFINES)
+CXXFLAGS	= -g -ggdb -Wall -O0 -ffreestanding -std=c++11 $(DEFINES)
 else
 PROG = main_release
 ASFLAGS		= -Wall -O3 -ffreestanding -std=gnu99 $(DEFINES)
 CFLAGS		= -Wall -O3 -ffreestanding -std=gnu99 $(DEFINES)
-CXXFLAGS	= -Wall -O3 -ffreestanding -std=gnu99 $(DEFINES)
+CXXFLAGS	= -Wall -O3 -ffreestanding -std=c++11 $(DEFINES)
 endif
 
 LDFLAGS		= #-T f1c100s.ld -nostdlib
@@ -95,4 +95,4 @@ mkboot:
 	@$(MKSUNXI) $(BUILD)/$(addprefix $(PROG), .bin)
 
 test_makefile:
-	@echo $(SSS_C)
+	@echo $(SRC_C)

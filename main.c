@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 
     tempData = (char *)malloc(1024 * 1024);
     fp = fopen("./touch.bin", "rb");              //只读存在打开
-    fp2 = fopen("./OUTPUT/touch_out.bin", "wb+"); //读写生成打开
+    fp2 = fopen("./build/touch_out.bin", "wb+"); //读写生成打开
     if (fp != NULL && fp2 != NULL)
     {
         // char str[] = "ssgerhbf";
