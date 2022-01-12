@@ -48,12 +48,35 @@
             }
         },
         {
-            "label": "make_simple",
+            "label": "make_current",
             "command": "gcc",
             "args": [
                 "-g","-std=gnu99","-c",
                 "${file}",
-                "-o","${workspaceRoot}\\OUTPUT\\${fileBasename}.o","-Wall"
+                "-o","${workspaceRoot}\\build\\${fileBasename}.o","-Wall"
+            ],
+            "problemMatcher": {
+                "owner": "c",
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
+                "pattern": {
+                    "regexp": "^(.*):(\\d+):(\\d+):\\s+(warning|error):\\s+(.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
+        },
+        {
+            "label": "make_clean",
+            "type": "shell",
+            "command": "mingw32-make",
+            "args": [
+                "clean"
             ],
             "problemMatcher": {
                 "owner": "c",

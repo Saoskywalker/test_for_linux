@@ -26,6 +26,32 @@
             "cwd": "${workspaceRoot}",
             "externalConsole": true,
             "preLaunchTask": "make_release"
-        }
+        },
+        {
+            "name": "compile current file",
+            "type": "cppdbg",
+            "request": "launch",
+            "targetArchitecture": "x64",
+            "program": "",
+            "miDebuggerPath": "",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "externalConsole": true,
+            "preLaunchTask": "make_current"
+        },
+        {
+            "name": "clean",
+            "type": "cppdbg",
+            "request": "launch",
+            "targetArchitecture": "x64",
+            "program": "",
+            "miDebuggerPath": "",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}",
+            "externalConsole": true,
+            "preLaunchTask": "make_clean"
+        },
     ]
 }
