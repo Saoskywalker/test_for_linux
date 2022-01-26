@@ -201,6 +201,15 @@ int _WAV_Play(char *path)
             SDL_PauseAudio(0);
             /************************/
 
+            /*output pcm data*/
+            data_count += r;
+            //Set audio buffer (PCM data)
+            audio_chunk = (uint8_t *)wav_buff[0];
+            //Audio buffer length
+            audio_len = r;
+            audio_pos = audio_chunk;
+            /**********************/
+
             Inx = 0;
             u = 0;
             while (1)
@@ -208,7 +217,8 @@ int _WAV_Play(char *path)
                 while (audio_len > 0) //Wait until finish
                     SDL_Delay(1);                
 
-                a--;
+                if(a)
+                    a--;
                 u++;
                 Inx++;
                 if (a >= 1)
@@ -237,7 +247,7 @@ int _WAV_Play(char *path)
                         if ((Inx % 2) == 1)
                             fread(wav_buff[0], 1, ReadSize, fp1);
                     }
-                    if (feof(fp1))
+                    if (feof(fp1)) //PS：原本无这处理，但用SDL时，要用这句退出，否则跳不出函数
                     {
                         printf("play end\r\n");
                         break;
