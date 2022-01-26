@@ -17,7 +17,7 @@ SRCDIRS_C +=
 SRC_C += $(wildcard $(foreach n, $(SRCDIRS_C), $(n)/*.c))
 
 #c source files
-SRC_C += main.c ts_calibrate_common.c cJSON.c MTF_file.c dwDriver.c dwDriveD2.c DW_FileDecodeLib.c
+SRC_C += main.c ts_calibrate_common.c cJSON.c MTF_file.c dwDriver.c dwDriveD2.c DW_FileDecodeLib.c test_sdl.c
 
 #c++ source path
 SRCDIRS_CXX += 
