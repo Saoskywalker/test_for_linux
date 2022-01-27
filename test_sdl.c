@@ -94,7 +94,6 @@ int _WAV_Play(char *path)
     char buff[8192];
     int res = 0;
     FILE *fp1 = NULL;
-    int wav_play_time = 0; //播放时长
     int data_count = 0;
 
     printf("WAV play\r\n");
@@ -144,6 +143,7 @@ int _WAV_Play(char *path)
         printf("sample rate:%d Byte/S\r\n", wav.byte_rate);
         printf("format block lenght:%d Byte\r\n", wav.format_blok_lenght);
         printf("data size:%d Byte\r\n", wav.data_size);
+        // int wav_play_time = 0; //播放时长
         // wav_play_time = wav.play_time_ms / 1000;
         // printf("play time:%02d:%02d:%02d \r\n",
         //        wav_play_time / 3600, wav_play_time % 3600 / 60, wav_play_time % 3600 % 60);
@@ -185,11 +185,16 @@ int _WAV_Play(char *path)
             //SDL_AudioSpec
             SDL_AudioSpec wanted_spec;
             wanted_spec.freq = wav.sample_rate; //44100;
-            wanted_spec.format = AUDIO_S16SYS;
             wanted_spec.channels = wav.num_channels; //2;
             wanted_spec.silence = 0;
             wanted_spec.samples = 1024;
             wanted_spec.callback = fill_audio;
+            if (wav.bits_per_sample == 16)
+                wanted_spec.format = AUDIO_S16SYS;
+            else if (wav.bits_per_sample == 32)
+                wanted_spec.format = AUDIO_S32SYS;
+            else
+                return -6;
 
             if (SDL_OpenAudio(&wanted_spec, NULL) < 0)
             {
