@@ -91,7 +91,7 @@ int _WAV_Play(char *path)
 #define ReadSize (512 * 40) /*一次读取数据大小*/
     int i, tj = 1;
     int a, b, u, Inx, r = 0;
-    char buff[8192];
+    uint8_t buff[8192];
     int res = 0;
     FILE *fp1 = NULL;
     int data_count = 0;
@@ -251,11 +251,6 @@ int _WAV_Play(char *path)
                             fread(wav_buff[1], 1, ReadSize, fp1);
                         if ((Inx % 2) == 1)
                             fread(wav_buff[0], 1, ReadSize, fp1);
-                    }
-                    if (feof(fp1)) //PS：原本无这处理，但用SDL时，要用这句退出，否则跳不出函数
-                    {
-                        printf("play end\r\n");
-                        break;
                     }
                 }
                 else
