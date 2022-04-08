@@ -363,9 +363,14 @@ int test(int argc, char *argv[])
 int test_sdl_bmp(int argc, char **argv);
 int test_sdl_audio(int argc, char* argv[]);
 int test_sdl_framebuffer(int argc, char* argv[]);
-
+#include "test_cpp.h"
+#include "Serial.h"
 int main(int argc, char *argv[])
 {
+    test_cpp(0, NULL);
+
+    test_serial(0, NULL);
+
     test_sdl_framebuffer(0, NULL);
     
     /* print the version */

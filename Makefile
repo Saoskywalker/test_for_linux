@@ -10,7 +10,7 @@ INCDIRS	+= #-Imachine/include -Iarch/arm32/include -Imachine/include/f1c100s -Id
 LIBDIRS	+=
 
 #library
-LIBS += -lgcc -lmingw32 -lSDL2main -lSDL2
+LIBS += -lgcc -lmingw32 -lSDL2main -lSDL2 -lstdc++
 
 #c source path
 SRCDIRS_C += 
@@ -24,7 +24,7 @@ SRCDIRS_CXX +=
 SRC_CXX += $(wildcard $(foreach n, $(SRCDIRS_CXX), $(n)/*.cpp))
 
 #c++ source files
-SRC_CXX += 
+SRC_CXX += test_cpp.cpp Serial.cpp
 
 #asm source files
 SRC_ASM += 
