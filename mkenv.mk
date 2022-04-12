@@ -52,8 +52,8 @@ CXXFLAGS	= -g -ggdb -Wall -O0 -ffreestanding -std=c++11 $(DEFINES)
 else
 PROG = main_release
 ASFLAGS		= -Wall -Os -ffreestanding -std=gnu99 $(DEFINES)
-CFLAGS		= -Wall -Os -ffreestanding -std=gnu99 $(DEFINES)
-CXXFLAGS	= -Wall -Os -ffreestanding -std=c++11 $(DEFINES)
+CFLAGS		= -Wall -Os -ffreestanding -std=gnu99 -fno-strict-aliasing $(DEFINES)
+CXXFLAGS	= -Wall -Os -ffreestanding -std=c++11 -fno-strict-aliasing $(DEFINES)
 endif
 
 LDFLAGS		= #-T f1c100s.ld -nostdlib
