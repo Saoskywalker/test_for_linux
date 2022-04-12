@@ -7,7 +7,7 @@ DEFINES	+= #-D__ARM32_ARCH__=5 -D__ARM926EJS__
 INCDIRS	+= #-Imachine/include -Iarch/arm32/include -Imachine/include/f1c100s -Idriver/include -Ilib
 
 #library path
-LIBDIRS	+=
+LIBDIRS	+= -L.
 
 #library
 LIBS += -lgcc -lmingw32 -lSDL2main -lSDL2 -lstdc++
@@ -89,7 +89,7 @@ $(OBJ_DIRS):
 
 $(BUILD)/$(addprefix $(PROG), $(EXTENSION)): $(OBJ)
 	$(ECHO) "LINK $@"
-	$(Q)$(CC) $(LDFLAGS) -Wl,--cref,-Map=$@.map -o $@ $^ $(LIBS)
+	$(Q)$(CC) $(LDFLAGS) -Wl,--cref,-Map=$@.map -o $@ $^ $(LIBDIRS) $(LIBS)
 	$(Q)$(SIZE) $@
 
 $(BUILD)/$(addprefix $(PROG), .bin): $(BUILD)/$(addprefix $(PROG), $(EXTENSION))
