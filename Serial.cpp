@@ -105,8 +105,8 @@ bool WZSerialPort::open(const char* portname,
 	//超时处理,单位：毫秒
 	//总超时＝时间系数×读或写的字符数＋时间常量
 	COMMTIMEOUTS TimeOuts;
-	TimeOuts.ReadIntervalTimeout = 600; //读间隔超时
-	TimeOuts.ReadTotalTimeoutMultiplier = 500; //读时间系数
+	TimeOuts.ReadIntervalTimeout = 100; //读间隔超时
+	TimeOuts.ReadTotalTimeoutMultiplier = 70; //读时间系数
 	TimeOuts.ReadTotalTimeoutConstant = 5000; //读时间常量
 	TimeOuts.WriteTotalTimeoutMultiplier = 500; // 写时间系数
 	TimeOuts.WriteTotalTimeoutConstant = 2000; //写时间常量
@@ -259,7 +259,7 @@ static WZSerialPort _serial;
 
 unsigned char serialOpen(const char *portname, int baudrate, char parity, char databit, char stopbit, char synchronizeflag)
 {
-    return (unsigned char)_serial.open(portname, baudrate, parity, databit, stopbit, synchronizeflag);
+    return (unsigned char)!_serial.open(portname, baudrate, parity, databit, stopbit, synchronizeflag);
 }
 
 unsigned char serialClose(void)
@@ -271,7 +271,7 @@ unsigned char serialClose(void)
 unsigned char serialRead(unsigned char *d, size_t order_size, size_t *result_size)
 {
     string res = "";
-    size_t i = 10;
+    size_t i = 0;
 
     *result_size = 0;
     res = _serial.receive();
@@ -323,22 +323,21 @@ int test_serial(int argc, char *argv[])
     //     w.close();
 	// }
 
- unsigned char rrr[1024] = {0};
- size_t r = 0;
- if(serialOpen("com6", 115200, 0, 8, 1, 0))
- {
-     while (1)
-     {
-         serialRead(rrr, 100, &r);
-         if(r != 0)
-         {
-             cout << rrr << endl;
-            serialWrite(rrr, r, &r);
-         }
-     }
-     
- }
- 
- serialClose();
+	unsigned char rrr[1024] = {0};
+	size_t r = 0;
+	if (serialOpen("com6", 115200, 0, 8, 1, 0) == 0)
+	{
+		while (1)
+		{
+			serialRead(rrr, 100, &r);
+			if (r != 0)
+			{
+				cout << rrr << endl;
+				serialWrite(rrr, r, &r);
+			}
+		}
+	}
+	serialClose();
+
 	return 0;
 }

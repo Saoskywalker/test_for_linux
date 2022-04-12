@@ -61,6 +61,10 @@ private:
 extern "C" {
 #endif
 
+unsigned char serialOpen(const char *portname, int baudrate, char parity, char databit, char stopbit, char synchronizeflag);
+unsigned char serialClose(void);
+unsigned char serialRead(unsigned char *d, size_t order_size, size_t *result_size);
+unsigned char serialWrite(unsigned char *d, size_t order_size, size_t *result_size);
 int test_serial(int argc, char *argv[]);
 
 #ifdef __cplusplus
