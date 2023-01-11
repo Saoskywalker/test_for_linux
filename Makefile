@@ -10,7 +10,7 @@ INCDIRS	+= #-Imachine/include -Iarch/arm32/include -Imachine/include/f1c100s -Id
 LIBDIRS	+= -L.
 
 #library
-LIBS += -lgcc -lmingw32 -lSDL2main -lSDL2 -lstdc++
+LIBS += -lgcc -lmingw32 -lSDL2main -lSDL2 -lstdc++ -lusb-1.0
 
 #c source path
 SRCDIRS_C += 

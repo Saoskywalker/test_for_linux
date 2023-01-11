@@ -360,6 +360,67 @@ int test(int argc, char *argv[])
     return 0;
 }
 
+#include <libusb-1.0/libusb.h>
+
+static void print_devs(libusb_device **devs)
+{
+	libusb_device *dev;
+	int i = 0, j = 0;
+	uint8_t path[8]; 
+ 
+	while ((dev = devs[i++]) != NULL) {
+		struct libusb_device_descriptor desc;
+		int r = libusb_get_device_descriptor(dev, &desc);
+		if (r < 0) {
+			printf("failed to get device descriptor");
+			return;
+		}
+ 
+		printf("%04x:%04x (bus %d, device %d)",
+			desc.idVendor, desc.idProduct,
+			libusb_get_bus_number(dev), libusb_get_device_address(dev));
+ 
+		r = libusb_get_port_numbers(dev, path, sizeof(path));
+		if (r > 0) {
+			printf(" path: %d", path[0]);
+			for (j = 1; j < r; j++)
+				printf(".%d", path[j]);
+		}
+		printf("\n");
+	}
+}
+
+int test_libusb(int argc, char* argv[])
+{
+    libusb_context *CTX = NULL;
+    libusb_device **devs = NULL;
+	int r;
+	ssize_t cnt;
+
+    if(libusb_init(&CTX)==0)
+    {
+        printf("libusb init ok\r\n");
+    }
+    else
+    {
+        return 0;
+    }
+ 
+	cnt = libusb_get_device_list(CTX, &devs);
+	if (cnt < 0){
+		libusb_exit(CTX);
+        printf("error\r\n");
+		return (int) cnt;
+	}
+ 
+	print_devs(devs);
+	libusb_free_device_list(devs, 1);
+ 
+	libusb_exit(CTX);
+
+    return 0;
+}
+
 int test_sdl_bmp(int argc, char **argv);
 int test_sdl_audio(int argc, char* argv[]);
 int test_sdl_framebuffer(int argc, char* argv[]);
@@ -367,6 +428,8 @@ int test_sdl_framebuffer(int argc, char* argv[]);
 #include "Serial.h"
 int main(int argc, char *argv[])
 {
+    test_libusb(0, NULL);
+
     test_cpp(0, NULL);
 
     test_serial(0, NULL);
